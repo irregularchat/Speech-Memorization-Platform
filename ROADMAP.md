@@ -1,6 +1,27 @@
 # ROADMAP.md
+## FILE STRUCTURE:
+The following files are required to be created to prevent future fracturing of the codebase. 
 
-#TODO as checkboxes in markdown:
+./utils/ # folder containing utility functions
+./logs/ # folder containing log files
+./data/ # folder containing data files
+./data/user_data/ # folder containing user data
+./data/user_data/texts/ # folder containing user texts
+./data/user_data/logs/ # folder containing user logs
+./data/pre_texts/ # folder containing pre-established texts
+./src/ # folder containing source code
+./assets/ # folder containing assets
+./assets/css/ # folder containing css files
+./assets/js/ # folder containing javascript files
+./assets/images/ # folder containing image files
+./assets/images/icons/ # folder containing icons
+./assets/images/backgrounds/ # folder containing background images
+./assets/audio/ # folder containing audio files
+./assets/audio/sounds/ # folder containing sound files for the app
+./assets/video/ # folder containing video files
+./assets/fonts/ # folder containing font files
+
+## TODO Functions:
 - [ ] Display the app title and description
 - [ ] Format speech text file in formatting that has:
     - [ ] Title
