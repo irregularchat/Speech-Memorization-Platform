@@ -1,6 +1,1 @@
-# requirements.txt
-
-streamlit
-speechrecognition
-difflib
-os
+# ./requirements.txt
