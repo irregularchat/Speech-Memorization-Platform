@@ -2,6 +2,8 @@
 
 An interactive application designed to help users memorize and practice military creeds and long speeches. The app listens to your speech in real-time, transcribes it, and compares it against the original text, highlighting any discrepancies.
 
+**NOT CURRENTLY WORKING** This line will be removed when the app is ready for testing.
+
 ## Features
 
 - **Text Selection**: Choose from a list of pre-established texts stored in the `pre_texts` directory or input your own custom text.
@@ -18,7 +20,8 @@ An interactive application designed to help users memorize and practice military
 - Python 3.x
 - Microphone access on your device
 
-### Steps
+### Steps 
+**NOT CURRENTLY WORKING** This line will be removed when the app is ready for testing.
 
 1. **Clone the repository**
 
