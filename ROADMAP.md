@@ -1,4 +1,20 @@
 # ROADMAP.md
+## Collaboration Guidance:
+
+### Team Leaders 
+(pull request to all your name below):
+- [ ] Research Team: 
+- [ ] Documentation Team: 
+- [ ] AI Integration Team: 
+- [ ] Frontend Team: 
+- [ ] Backend Docker Team:
+- [ ] Deployment Team: 
+- [ ] Testing Team: 
+
+### General Collaboration Guidelines
+
+Don't self select thinking you don't know enough about a topic to contribute. This is a small community project with no deadlines and no pressure. We are all here to learn and have fun. Use this as an opportunity to build your skills and knowledge and use GPT and [Cursor App](https://cursor.com/) to help you along the way.
+
 ## Navigation STRUCTURE:
 The following files are required to be created to prevent future fracturing of the codebase. 
 
