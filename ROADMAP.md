@@ -39,3 +39,10 @@ The following files are required to be created to prevent future fracturing of t
 - [ ] Calculate performance statistics
 - [ ] Display the highlighted text and statistics to the user
 - [ ] Log the session results to a log file for progress tracking
+
+
+
+## Running Questions:
+### Q: What studies have been done on memorization techniques for large amounts of text and their effectiveness?
+### Q: What are the best practices for designing an app that allows users to input and interact with text?
+### Q: What are the largest challenges for people when memorizing large amounts of text?
