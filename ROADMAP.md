@@ -93,3 +93,5 @@ The following files are required to be created to prevent future fracturing of t
 ### Q: What studies have been done on memorization techniques for large amounts of text and their effectiveness?
 ### Q: What are the best practices for designing an app that allows users to input and interact with text?
 ### Q: What are the largest challenges for people when memorizing large amounts of text?
+### Q: Not trying to be cute, but like a teleprompter app?
+A: Yes, it’s similar to a teleprompter, but it’s inspired by the Anki method for delayed recall and guided study. The app helps you focus on the areas that matter by identifying sections you’re already familiar with and highlighting the ones you’re struggling with. This way, it enhances your ability to recall information effectively while also giving you real-time feedback on your performance
