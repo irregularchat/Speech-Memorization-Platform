@@ -2,11 +2,13 @@
 ## Collaboration Guidance:
 
 ### Team Leaders 
-(pull request to all your name below):
+(pull request to all your name below, this serves as a way to know who is involved in the project and to give credit where it's due):
 - [ ] Research Team: 
 - [ ] Documentation Team: 
 - [ ] AI Integration Team: 
 - [ ] Frontend Team: 
+  - [ ] Styling Team:
+  - [ ] User Experience Team:
 - [ ] Backend Docker Team:
 - [ ] Deployment Team: 
 - [ ] Testing Team: 
