@@ -23,8 +23,8 @@ An interactive application designed to help users memorize and practice military
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/yourusername/speech-practice-app.git
-   cd speech-practice-app
+   git clone https://github.com/yourusername/speech-memorization-platform.git
+   cd speech-memorization-platform
    ```
 
 2. **Install dependencies**
