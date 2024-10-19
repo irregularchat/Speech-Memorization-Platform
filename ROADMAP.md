@@ -17,6 +17,8 @@
 
 Don't self select thinking you don't know enough about a topic to contribute. This is a small community project with no deadlines and no pressure. We are all here to learn and have fun. Use this as an opportunity to build your skills and knowledge and use GPT and [Cursor App](https://cursor.com/) to help you along the way.
 
+For more Collaboration Guidelines, see [CONTRIBUTING.md](./CONTRIBUTING.md).
+
 ## Navigation STRUCTURE:
 The following files are required to be created to prevent future fracturing of the codebase. 
 
