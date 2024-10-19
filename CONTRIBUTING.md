@@ -20,7 +20,7 @@ For **Windows** we recommend using the [Windows Subsystem for Linux](https://doc
 - Docker Compose 
 - [Cursor App](https://cursor.com/) (GUI for GPT enabled coding) 
 - [KeepassXC](https://keepassxc.org/) (Password manager which can integrate with your OS's keychain and ssh-agent)
-  - Alternatively you can use [Bitwarden](https://bitwarden.com/) or see the community [Password Manager wiki](https://irregularpedia.org/index.php/Password-manager) for other options.
+  - Alternatively you can use more basic password managers like [Bitwarden](https://bitwarden.com/) or see the community [Password Manager wiki](https://irregularpedia.org/index.php/Password-manager) for other options.
 - [Element](https://element.io/) (Matrix Client, for chatting with the team)
 
 ### 1. **Setting Up SSH for GitHub Access**
