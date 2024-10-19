@@ -4,7 +4,7 @@
 
 Welcome to the project! We encourage everyone, regardless of skill level, to contribute. Follow these guidelines to help maintain a smooth workflow and ensure a collaborative, productive environment.
 
-
+Join the Matrix Room about the project [here](https://matrix.to/#/%23speech-memorization-platform:irregularchat.com).
 
 ### 1. **Setting Up SSH for GitHub Access**
 

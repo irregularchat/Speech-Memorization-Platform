@@ -1,6 +1,10 @@
 # ROADMAP.md
 ## Collaboration Guidance:
 
+
+Join the Matrix Room about the project [here](https://matrix.to/#/%23speech-memorization-platform:irregularchat.com).
+
+
 ### Team Leaders 
 (pull request to all your name below, this serves as a way to know who is involved in the project and to give credit where it's due):
 - [ ] Research Team: 
