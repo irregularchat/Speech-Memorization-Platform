@@ -220,7 +220,7 @@ Since you'll be contributing code to the project, you will typically fork the re
 Add your name below to indicate your involvement and responsibility for certain areas. This helps everyone see who’s leading what section and fosters accountability:
 
 - [ ] **Research Team:**
-- [ ] **Documentation Team:**
+- [ ] **Documentation Team:** SAC
 - [ ] **AI Integration Team:**
 - [ ] **Frontend Team:**
   - [ ] **Styling Team:**
