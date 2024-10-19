@@ -5,6 +5,21 @@
 Welcome to the project! We encourage everyone, regardless of skill level, to contribute. Follow these guidelines to help maintain a smooth workflow and ensure a collaborative, productive environment.
 
 Join the Matrix Room about the project [here](https://matrix.to/#/%23speech-memorization-platform:irregularchat.com).
+### 0. **Set up a Development Environment**
+To work best you'll need to setup a development environment.
+On **MacOS** you should use [Homebrew](https://brew.sh/) to install the following.
+On **Linux** you can install the following dependencies using your package manager, such as `apt` or `pacman`.
+For **Windows** we recommend using the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install) (WSL).
+
+ Install the following:
+- Git
+- Python
+- Docker
+- Docker Compose 
+- [Cursor App](https://cursor.com/) (GUI for GPT enabled coding) 
+- [KeepassXC](https://keepassxc.org/) (Password manager which can integrate with your OS's keychain and ssh-agent)
+  - Alternatively you can use [Bitwarden](https://bitwarden.com/) or see the community [Password Manager wiki](https://irregularpedia.org/index.php/Password-manager) for other options.
+- [Element](https://element.io/) (Matrix Client, for chatting with the team)
 
 ### 1. **Setting Up SSH for GitHub Access**
 
