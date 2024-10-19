@@ -175,6 +175,9 @@ Since you'll be contributing code to the project, you will typically fork the re
    - **Link issues to [pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests)** to show what you’re addressing.
 
 
+   See [13. GitHub Issues Tagging for Agile Project Management](#13-github-issues-tagging-for-agile-project-management) for more information on how to use the issue tracker for project management.
+
+
 
 ### 8. **Assign Tasks and Collaborate**
    - **Assign yourself to tasks** when you start working on an issue.
@@ -213,7 +216,7 @@ Since you'll be contributing code to the project, you will typically fork the re
    - Run tests before submitting a pull request to ensure that your code does not introduce any issues.
 
 
-13. GitHub Issues Tagging for Agile Project Management
+### 13. GitHub Issues Tagging for Agile Project Management
 
 We will use a Kanban board to manage and visualize tasks during development. To keep everything organized, the following tagging conventions must be followed when creating or updating issues in GitHub:
 
@@ -246,6 +249,44 @@ We will use a Kanban board to manage and visualize tasks during development. To 
 - discussion: For tasks or questions that need further discussion before work can begin.
 
 These labels help track tasks, prioritize issues, and provide transparency. Team members should make sure to assign the appropriate labels and update the status as they progress through their work. Make sure that every issue created is tagged correctly to ensure clear communication across the team.
+
+#### cli gh commands and examples for managing issues for kanban board
+``` bash 
+# create issue with title, description, and labels
+gh issue create --title "feature/new-feature" --body "description" --label "type-feature, priority-high"
+
+# update issue with title, description, and labels
+gh issue update 1 --title "feature/new-feature" --body "description" --add-label "type-feature, priority-high"
+
+# add labels to an issue
+gh issue update 1 --add-label "type-feature, priority-high"
+
+# list all labels for a repository
+gh issue list --label "type-feature, priority-high"
+
+# list all issues with a label
+gh issue list --label "type-feature, priority-high"
+
+# list all issues with a label and a specific status
+gh issue list --label "type-feature, priority-high" --status "status-in-progress"
+
+# change the status of an issue
+gh issue update 1 --status "status-in-progress"
+
+# add assignee to an issue
+gh issue update 1 --assignee "username"
+
+# list all issues assigned to a user
+gh issue list --assignee "username"
+
+# list all issues assigned to a user and a specific status
+gh issue list --assignee "username" --status "status-in-progress"
+```
+
+
+
+
+
 
 
 ## Team Collaboration Roles
