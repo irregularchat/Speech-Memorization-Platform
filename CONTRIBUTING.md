@@ -11,6 +11,8 @@ On **MacOS** you should use [Homebrew](https://brew.sh/) to install the followin
 On **Linux** you can install the following dependencies using your package manager, such as `apt` or `pacman`.
 For **Windows** we recommend using the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install) (WSL).
 
+**A Virtual Environment** may be useful to manage dependencies and isolating your work environment from the rest of your system. See the [Virtual Environment wiki](https://irregularpedia.org/index.php/Virtual_Environments) for more information on Virtual Machines and Containers.
+
  Install the following:
 - Git
 - Python
