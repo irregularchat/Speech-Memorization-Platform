@@ -54,6 +54,8 @@ To contribute to the project by pushing code or creating [pull requests](https:/
 
 ### 2. **Forking the Repository and Creating [pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests)**
 
+[Youtube Video on Forking a Repo](https://youtu.be/a_FLqX3vGR4?si=M7v23WqeLA1zMh61&t=24)
+
 Since you'll be contributing code to the project, you will typically fork the repository to make changes in your own copy before submitting them to the main project.
 
 #### Steps for Forking and Creating a Pull Request:
