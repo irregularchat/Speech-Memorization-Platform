@@ -213,6 +213,39 @@ Since you'll be contributing code to the project, you will typically fork the re
    - Run tests before submitting a pull request to ensure that your code does not introduce any issues.
 
 
+13. GitHub Issues Tagging for Agile Project Management
+
+We use a Kanban board to manage and visualize tasks during development. To keep everything organized, the following tagging conventions must be followed when creating or updating issues in GitHub:
+
+1. Priority Labels:
+
+- priority-high: Critical issues that must be resolved as soon as possible.
+- priority-medium: Important issues that should be addressed after high-priority tasks.
+- priority-low: Non-urgent tasks that can be scheduled for later.
+
+2. Type Labels:
+
+- type-bug: Used for bugs or defects that need fixing.
+- type-feature: Used for new features or enhancements to the project.
+- type-task: Used for general tasks like documentation, code refactoring, or research.
+- type-debt: Refers to technical debt, where code needs improvement or refactoring.
+
+3. Status Labels:
+- status-backlog: For issues that are ready to be worked on.
+- status-future: For issues that are planned for future development. # for issues not ready to be worked on yet
+- status-in-progress: For tasks currently being worked on.
+- status-needs-review: For tasks that require code review or testing.
+- status-done: For completed tasks that have been merged or implemented.
+
+4. Additional Labels:
+
+- blocked: Indicates that an issue is blocked by another task or dependency.
+- help-wanted: When assistance from others is needed.
+- good-first-issue: For tasks that are beginner-friendly.
+- discussion: For tasks or questions that need further discussion before work can begin.
+
+These labels help track tasks, prioritize issues, and provide transparency. Team members should make sure to assign the appropriate labels and update the status as they progress through their work. Make sure that every issue created is tagged correctly to ensure clear communication across the team.
+
 
 ## Team Collaboration Roles
 
