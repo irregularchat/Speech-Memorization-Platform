@@ -8,7 +8,7 @@ Join the Matrix Room about the project [here](https://matrix.to/#/%23speech-memo
 
 ### 1. **Setting Up SSH for GitHub Access**
 
-To contribute to the project by pushing code or creating pull requests, it is highly recommended to use **SSH** to securely communicate with GitHub. This will prevent you from entering your username and password every time you push code.
+To contribute to the project by pushing code or creating [pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests), it is highly recommended to use **SSH** to securely communicate with GitHub. This will prevent you from entering your username and password every time you push code.
 
 #### Steps to Set Up SSH with GitHub:
 1. **Generate an SSH Key**:
@@ -35,7 +35,7 @@ To contribute to the project by pushing code or creating pull requests, it is hi
 
 
 
-### 2. **Forking the Repository and Creating Pull Requests**
+### 2. **Forking the Repository and Creating [pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests)**
 
 Since you'll be contributing code to the project, you will typically fork the repository to make changes in your own copy before submitting them to the main project.
 
@@ -155,7 +155,7 @@ Since you'll be contributing code to the project, you will typically fork the re
 ### 7. **Use Issue Tracker**
    - Every task should have a corresponding issue in the tracker. This helps keep things organized and allows for discussion before work begins.
    - **Create an issue** for bugs, enhancements, or questions. Clearly describe the problem, goal, or question.
-   - **Link issues to pull requests** to show what you’re addressing.
+   - **Link issues to [pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests)** to show what you’re addressing.
 
 
 
@@ -167,7 +167,7 @@ Since you'll be contributing code to the project, you will typically fork the re
 
 ### 9. **Code Review and Pull Requests**
    - All code contributions should be made via **pull requests**. 
-   - Keep your **pull requests small and focused**. It's easier to review and reduces the chance of merge conflicts.
+   - Keep your **[pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) small and focused**. It's easier to review and reduces the chance of merge conflicts.
    - **Pull requests should:**
      - Reference the issue they resolve (e.g., "Fixes #123").
      - Include a clear summary of the changes.
