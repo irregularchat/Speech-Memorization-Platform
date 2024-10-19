@@ -6,6 +6,12 @@ Imagine how lyrics from your favorite songs display on apple music or on karaoke
 
 **NOT CURRENTLY WORKING** This line will be removed when the app is ready for testing.
 
+## Contributing
+
+We welcome contributions to this project. Please read our [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute.
+
+For the direction of the project, please read our [ROADMAP.md](ROADMAP.md) file.
+
 ## Features
 
 - **Text Selection**: Choose from a list of pre-established texts stored in the `pre_texts` directory or input your own custom text.
@@ -45,4 +51,4 @@ Imagine how lyrics from your favorite songs display on apple music or on karaoke
    ```
 
 ## Usage
-
+TBD
