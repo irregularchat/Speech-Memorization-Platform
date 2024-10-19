@@ -169,9 +169,12 @@ Since you'll be contributing code to the project, you will typically fork the re
 
 
 
-### 7. **Use Issue Tracker**
-   - Every task should have a corresponding issue in the tracker. This helps keep things organized and allows for discussion before work begins.
-   - **Create an issue** for bugs, enhancements, or questions. Clearly describe the problem, goal, or question.
+### 7. **Use Project Tracker**
+[Project Board Here](https://github.com/orgs/irregularchat/projects/3)
+   - Using the Scrum method, with Epics (Milestones),  Stories (Issues), and Tasks (Sub-issues inside of Issues).
+   - These will be added to a shared project which will have multiple views for different roles.
+   ![Example of a task on the Project Board](./assets/images/docs-example-task-project.png)
+   In this image notice the "Milestone" which is the Epic, and the "Issue" which is the Story, and the "Task" which is a Sub-issue of the Story. Clicking on any of those will provide additional context and allow you to leave comments.
    - **Link issues to [pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests)** to show what you’re addressing.
 
 
