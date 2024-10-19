@@ -265,14 +265,20 @@ gh label create "status-backlog" --description "For issues that are ready to be 
 gh label create "status-in-progress" --description "For tasks currently being worked on." --color "0e8a16"
 gh label create "status-done" --description "For completed tasks that have been merged or implemented." --color "1d76db"
 ##Example Epic and Story Labels based on the project's epics and stories
-# Epic Labels
-gh label create "epic-1" --description "App Basics." --color "ff6347"
+# Epic Labels as Milestones
+# Create a milestone for "App Basics"
+gh api repos/:owner/:repo/milestones \
+  -f title="App Basics" \
+  -f description="This milestone tracks all tasks related to the basics of the app, including display, text selection, and user interaction." \
+  -f due_on="2024-12-01T00:00:00Z"
 
 # Story Labels for Epic 1
 gh label create "story-1.1" --description "Display the app title." --color "ffd700"
 "ffd700"
 
 ```
+
+
 #### cli gh commands and examples for managing issues for kanban board
 ``` bash 
 # create issue with title, description, and labels
