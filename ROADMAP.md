@@ -6,6 +6,8 @@ Join the Matrix Room about the project [here](https://matrix.to/#/%23speech-memo
 
 
 ### Team Leaders 
+[Youtube Video on Forking a Repo](https://youtu.be/a_FLqX3vGR4?si=M7v23WqeLA1zMh61&t=24)
+
 (pull request to all your name below, this serves as a way to know who is involved in the project and to give credit where it's due):
 - [ ] Research Team: 
 - [ ] Documentation Team: 
