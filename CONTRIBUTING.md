@@ -249,7 +249,30 @@ We will use a Kanban board to manage and visualize tasks during development. To 
 - discussion: For tasks or questions that need further discussion before work can begin.
 
 These labels help track tasks, prioritize issues, and provide transparency. Team members should make sure to assign the appropriate labels and update the status as they progress through their work. Make sure that every issue created is tagged correctly to ensure clear communication across the team.
+#### Label Setup with CLI GH Commands
+``` bash
+# Priority Labels
+gh label create "priority-low" --description "Non-urgent tasks that can be scheduled for later." --color "cfd3d7"
+gh label create "priority-medium" --description "Important issues that should be addressed after high-priority tasks." --color "fbca04"
+gh label create "priority-high" --description "Critical issues that must be resolved as soon as possible." --color "b60205"
 
+# Type Labels
+gh label create "type-feature" --description "New features or enhancements." --color "a2eeef"
+gh label create "type-task" --description "General tasks, refactoring, or documentation." --color "cfd3d7"
+
+# Status Labels
+gh label create "status-backlog" --description "For issues that are ready to be worked on." --color "f9d0c4"
+gh label create "status-in-progress" --description "For tasks currently being worked on." --color "0e8a16"
+gh label create "status-done" --description "For completed tasks that have been merged or implemented." --color "1d76db"
+##Example Epic and Story Labels based on the project's epics and stories
+# Epic Labels
+gh label create "epic-1" --description "App Basics." --color "ff6347"
+
+# Story Labels for Epic 1
+gh label create "story-1.1" --description "Display the app title." --color "ffd700"
+"ffd700"
+
+```
 #### cli gh commands and examples for managing issues for kanban board
 ``` bash 
 # create issue with title, description, and labels
