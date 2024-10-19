@@ -215,7 +215,7 @@ Since you'll be contributing code to the project, you will typically fork the re
 
 13. GitHub Issues Tagging for Agile Project Management
 
-We use a Kanban board to manage and visualize tasks during development. To keep everything organized, the following tagging conventions must be followed when creating or updating issues in GitHub:
+We will use a Kanban board to manage and visualize tasks during development. To keep everything organized, the following tagging conventions must be followed when creating or updating issues in GitHub:
 
 1. Priority Labels:
 
@@ -231,10 +231,11 @@ We use a Kanban board to manage and visualize tasks during development. To keep 
 - type-debt: Refers to technical debt, where code needs improvement or refactoring.
 
 3. Status Labels:
+- status-pending-development: For issues that are not ready to be worked on and are being researched or analyzed for future development.
 - status-backlog: For issues that are ready to be worked on.
-- status-future: For issues that are planned for future development. # for issues not ready to be worked on yet
+- status-ready: For issues that are planned for future development. # for issues not ready to be worked on yet
 - status-in-progress: For tasks currently being worked on.
-- status-needs-review: For tasks that require code review or testing.
+- status-in-review: For tasks that require code review or testing.
 - status-done: For completed tasks that have been merged or implemented.
 
 4. Additional Labels:
