@@ -179,11 +179,11 @@ Since you'll be contributing code to the project, you will typically fork the re
 
 
 
-### 8. **Assign Tasks and Collaborate**
+### 8. **Assign Tasks and Collaborate** 
    - **Assign yourself to tasks** when you start working on an issue.
    - **Collaborate actively** with other contributors, especially if you are unsure about an approach. Don’t hesitate to ask questions or request feedback.
 
-
+   See [13. GitHub Issues Tagging for Agile Project Management](#13-github-issues-tagging-for-agile-project-management) for more information on how to use the issue tracker for project management fully.
 
 ### 9. **Code Review and Pull Requests**
    - All code contributions should be made via **pull requests**. 
