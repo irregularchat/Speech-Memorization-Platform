@@ -46,6 +46,7 @@ The following files are required to be created to prevent future fracturing of t
     - [./assets/audio/sounds/](./assets/audio/sounds/) # folder containing sound files for the app
   - [./assets/video/](./assets/video/) # folder containing video files
   - [./assets/fonts/](./assets/fonts/) # folder containing font files
+  - [./test/](./test/) # folder containing test files
 
 ## File Navigation:
 ### Python Files
@@ -57,6 +58,8 @@ The following files are required to be created to prevent future fracturing of t
 - [./.env](./.env) # environment variables file for the app containing sensitive information such as API keys and passwords to prevent them from being hardcoded into the app or committed to the repository
 - [./Dockerfile](./Dockerfile) # docker file used for applying constraints to the app 
 
+### Testing Files
+- [./test/app_test.py](./test/app_test.py) # test file for the app
 ### MISC Files
 - [./assets/images/logo_REPLACEME.png](./assets/images/logo_REPLACEME.png) # logo for the app
 - [./assets/images/background_REPLACEME.png](./assets/images/background_REPLACEME.png) # background image for the app
