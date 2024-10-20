@@ -60,6 +60,7 @@ The following files are required to be created to prevent future fracturing of t
 
 ### Testing Files
 - [./tests/app_test.py](./tests/app_test.py) # test file for the app
+
 ### MISC Files
 - [./assets/images/logo_REPLACEME.png](./assets/images/logo_REPLACEME.png) # logo for the app
 - [./assets/images/background_REPLACEME.png](./assets/images/background_REPLACEME.png) # background image for the app
@@ -121,6 +122,10 @@ The following files are required to be created to prevent future fracturing of t
 These questions are to be answered by research and testing before the app can be considered complete and will represent questions from the community have have been answered.
 
 ### Q: What studies have been done on memorization techniques for large amounts of text and their effectiveness?
+A: Research on memorization techniques for large amounts of text highlights several effective methods. Spaced repetition and active recall, particularly through flashcard applications like Anki, have demonstrated significant benefits, especially in medical education. These methods improve long-term retention and exam performance, as shown by medical students’ extensive use of Anki, correlating with higher scores and better knowledge retention (Toth et al., 2023; Lu et al., 2021). Additionally, mnemonic techniques have proven more effective than rote memorization in various educational contexts, aiding in the retention of large amounts of information (van de Lint & Bosman, 2019).
+
+Chunking, the practice of grouping information into smaller units, has been shown to enhance short-term memory retention, especially when applied to single-type information (Suppawittaya & Yasri, 2021). In public speaking and speech memorization, rhetorical techniques such as organization, elaboration, and visualization are frequently recommended to improve audience retention and recall (Wackers, 2021). The combination of these strategies—spaced repetition, mnemonic methods, chunking, and rhetorical techniques—has been found to be highly effective for retaining large volumes of information.
+
 ### Q: What are the best practices for designing an app that allows users to input and interact with text?
 ### Q: What are the largest challenges for people when memorizing large amounts of text?
 ### Q: Not trying to be cute, but like a teleprompter app?
