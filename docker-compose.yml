@@ -1,1 +1,18 @@
 # ./docker-compose.yml
+services:
+  SpeechMemorizer: # name of the service
+    build: . # build the app from the Dockerfile
+    ports:
+      - "${PORT}:${PORT}" # map the port from the host to the container
+    environment:
+      - BASE_DOMAIN=${BASE_DOMAIN}
+      - PORT=${PORT}
+    volumes: # mount the volumes from the host to the container
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./assets:/app/assets
+      - ./utils:/app/utils
+      - ./logs:/app/logs
+    env_file: # load the environment variables from the .env file
+      - .env
+    restart: unless-stopped # restart the container unless it is stopped

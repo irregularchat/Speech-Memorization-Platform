@@ -33,4 +33,4 @@ EXPOSE 8880
 
 # Command to run the Streamlit app using a shell to handle environment variable substitution
 # We default to port 8880 if the PORT env var isn't defined
-CMD ["sh", "-c", "streamlit run /app/app.py --server.port=${PORT:-8880} --server.enableCORS=false"]
+CMD ["sh", "-c", "streamlit run /app.py --server.port=${PORT:-8880} --server.enableCORS=false"]
