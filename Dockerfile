@@ -1,6 +1,7 @@
 # ./Dockerfile
 # Use the official Python image as the base image
-FROM python:3.12-slim
+# FROM python:3.12-slim
+FROM python:3.9-slim
 
 # Set environment variables for non-interactive installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -12,10 +13,9 @@ WORKDIR /app
 # These are common dependencies needed by packages like cryptography, pandas, etc.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    build-essential gcc libssl-dev libffi-dev \
+    build-essential gcc libssl-dev libffi-dev libasound2-dev \
     libxml2-dev libxslt1-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
-
 # Copy the requirements.txt first to leverage Docker cache
 COPY requirements.txt .
 
