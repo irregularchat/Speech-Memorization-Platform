@@ -1,1 +1,19 @@
 # ./requirements.txt
+# requirements for app using streamlit and pydub for audio processing, to show text on the screen
+# and pyaudio for audio input.  Some text will be blocked out by the app to test the user's memory.
+# openai will be used to help split up the text into chunks.
+# delayed recall will be used to test the user's memory. similar to anki flashcards but with sections of the text.
+# streamlit is used to create the app   
+streamlit
+# flask is used to create the api
+flask
+# pydub is used to process audio
+pydub
+# pyaudio is used to capture audio input
+pyaudio
+# openai is used to help split up the text into chunks
+openai
+# pydantic is used to validate the data types of the data
+pydantic
+# speech_recognition is used to capture audio input
+speech_recognition
