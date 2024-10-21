@@ -86,7 +86,13 @@ The following files are required to be created to prevent future fracturing of t
 
 ## TODO Functions:
 ### App Basics
-- [ ] Display the app title
+- [ ] Display the app title and basic box where the text will be displayed 
+- [ ] Add buttons for the app
+  - [ ] Microphone button
+  - [ ] Pause / Play  button
+  - [ ] Restart button
+  - [ ] Select Text button
+  - [ ] Add Custom Text button
 - [ ] Format speech text file in formatting that has the following and can be parsed by the app:
     - [ ] Title
     - [ ] Text
