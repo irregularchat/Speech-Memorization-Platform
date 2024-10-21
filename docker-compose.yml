@@ -1,6 +1,6 @@
 # ./docker-compose.yml
 services:
-  SpeechMemorizer: # name of the service
+  speech-memorization-platform: # name of the service
     build: . # build the app from the Dockerfile
     ports:
       - "${PORT}:${PORT}" # map the port from the host to the container
