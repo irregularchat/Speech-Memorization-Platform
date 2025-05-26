@@ -1,10 +1,14 @@
 import tkinter as tk
-from tkinter import scrolledtext, ttk
+from tkinter import scrolledtext, ttk, StringVar
 import os
 from utils.text_parser import parse_speech_text_file
+from utils.ui_utils import configure_highlight_tag, highlight_word, clear_highlight
 
 # Global variable to store loaded texts (title: content mapping)
 loaded_texts_map = {}
+# Global variable to track the end of the current highlight
+current_highlight_end_index = "1.0"
+
 
 def load_available_texts():
     """
@@ -70,12 +74,18 @@ def main():
     text_area.insert(tk.INSERT, "Select a speech from the dropdown to display its content.")
     text_area.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
+    # Configure the highlight tag for the text_area
+    configure_highlight_tag(text_area)
+
     def on_text_selected(event):
+        global current_highlight_end_index
         selected_title = speech_combobox.get()
         if selected_title in loaded_texts_map:
             content = loaded_texts_map[selected_title]
             text_area.delete('1.0', tk.END)
             text_area.insert(tk.INSERT, content)
+            current_highlight_end_index = "1.0" # Reset for new text
+            clear_highlight(text_area) # Clear previous highlight
         else:
             text_area.delete('1.0', tk.END)
             text_area.insert(tk.INSERT, f"Content for '{selected_title}' not found.")
@@ -109,6 +119,45 @@ def main():
 
     add_custom_text_button = tk.Button(button_frame, text="Add Custom Text")
     add_custom_text_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+    # --- Highlight Next Word Button and Functionality ---
+    def highlight_next_word_in_textarea(text_widget: scrolledtext.ScrolledText):
+        """Highlights the next word in the given ScrolledText widget sequentially."""
+        global current_highlight_end_index
+        
+        count_var = StringVar() # Needed for search's count parameter, though not strictly used for end_index calculation here
+        
+        # Search for the next non-whitespace sequence starting from current_highlight_end_index
+        start_index = text_widget.search(r'\S+', current_highlight_end_index, tk.END, regexp=True, count=count_var)
+        
+        if start_index:
+            # Calculate end_index using wordend for robustness
+            end_index = text_widget.index(f"{start_index} wordend")
+            
+            # Ensure a valid word is found (start and end are different)
+            if start_index and end_index and start_index != end_index:
+                highlight_word(text_widget, start_index, end_index)
+                current_highlight_end_index = end_index # Update for next search
+                text_widget.see(start_index) # Ensure the highlighted word is visible
+            else:
+                # This case might occur if search lands on something non-standard or at the very end
+                print("Could not determine valid word boundaries from search result.")
+                # Reset to restart highlighting from the beginning
+                current_highlight_end_index = "1.0"
+                clear_highlight(text_widget)
+                print("Highlighting reset. Click 'Highlight Next Word' to start from the beginning.")
+        else:
+            # No more words found, reset to the beginning
+            print("End of text reached. Highlighting will restart.")
+            current_highlight_end_index = "1.0"
+            clear_highlight(text_widget)
+
+    highlight_next_button = tk.Button(
+        button_frame, 
+        text="Highlight Next Word", 
+        command=lambda: highlight_next_word_in_textarea(text_area)
+    )
+    highlight_next_button.pack(side=tk.LEFT, padx=5, pady=5)
 
     # Start the Tkinter event loop
     root.mainloop()
