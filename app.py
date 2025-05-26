@@ -1,65 +1,41 @@
-# ./app.py
-# Import necessary libraries
-import streamlit as st
-from utils import text_parser, audio_handler, user_management
+import tkinter as tk
+from tkinter import scrolledtext
 
-# Global variables to hold user state
-current_text = None
-user_stats = user_management.load_user_stats()
+def main():
+    # Create the main window
+    root = tk.Tk()
+    root.title("Speech Memorization Platform")
 
-# Streamlit app configuration
-st.set_page_config(page_title="Speech Memorization Platform", layout="centered")
-def get_title():
-    return "Speech Memorization Platform"
+    # Set window size (optional, but good for starting)
+    root.geometry("800x600")
 
-# Title of the app
-st.title("Speech Memorization Platform")
+    # Create a ScrolledText widget
+    text_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=100, height=30)
+    text_area.insert(tk.INSERT, "Text will appear here.")
+    text_area.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
-# Sidebar for text selection
-st.sidebar.header("Select or Add Text")
+    # Create a frame for the buttons
+    button_frame = tk.Frame(root)
+    button_frame.pack(padx=10, pady=5, fill=tk.X, expand=False)
 
-# Load pre-existing texts
-pre_texts = ["Creed 1", "Creed 2", "Speech 1", "Speech 2"]
-selected_text = st.sidebar.selectbox("Choose a pre-loaded text", pre_texts)
+    # Create and pack the buttons
+    mic_button = tk.Button(button_frame, text="Microphone")
+    mic_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-# Option to upload custom text
-uploaded_file = st.sidebar.file_uploader("Upload custom text", type="txt")
+    play_pause_button = tk.Button(button_frame, text="Play/Pause")
+    play_pause_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-# Display text (user can adjust the speed of words per minute)
-if selected_text or uploaded_file:
-    if uploaded_file:
-        current_text = text_parser.load_text_from_file(uploaded_file)
-    else:
-        current_text = text_parser.load_text_from_file(f"data/pre_texts/{selected_text}.txt")
+    restart_button = tk.Button(button_frame, text="Restart")
+    restart_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-    st.subheader("Text to Memorize")
-    st.write(current_text)
+    select_text_button = tk.Button(button_frame, text="Select Text")
+    select_text_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-    words_per_minute = st.slider("Words per Minute", min_value=50, max_value=300, value=150)
-    st.text(f"Text scrolling at {words_per_minute} WPM")
+    add_custom_text_button = tk.Button(button_frame, text="Add Custom Text")
+    add_custom_text_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-# Audio Input and Processing
-st.subheader("Audio Input")
-audio_file = st.file_uploader("Upload your audio file", type=["wav", "mp3"])
+    # Start the Tkinter event loop
+    root.mainloop()
 
-if audio_file:
-    st.write("Processing audio...")
-    transcribed_text = audio_handler.transcribe_audio(audio_file)
-    st.write("Transcribed Text:")
-    st.write(transcribed_text)
-
-    # Compare transcribed text with the original
-    if current_text:
-        comparison_results = text_parser.compare_text(transcribed_text, current_text)
-        st.write("Comparison Results:")
-        st.write(comparison_results['differences'])
-
-        # Update and display user performance statistics
-        user_management.update_stats(comparison_results)
-        st.write(f"Total Words: {comparison_results['total_words']}")
-        st.write(f"Errors: {comparison_results['errors']}")
-
-# Display user's statistics
-st.sidebar.subheader("User Stats")
-st.sidebar.write(f"Total Words Memorized: {user_stats['total_words']}")
-st.sidebar.write(f"Total Errors: {user_stats['errors']}")
+if __name__ == "__main__":
+    main()
