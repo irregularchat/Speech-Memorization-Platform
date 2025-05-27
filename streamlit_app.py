@@ -7,7 +7,24 @@ import soundfile as sf
 import queue
 import threading
 import time
+import platform
 from utils.text_parser import parse_speech_text_file
+
+# Set PulseAudio as the host API if available
+try:
+    # Check if PULSE_SERVER is set, which indicates we're using PulseAudio forwarding
+    if 'PULSE_SERVER' in os.environ:
+        st.write(f"PulseAudio server detected: {os.environ['PULSE_SERVER']}")
+        # Try to configure sounddevice to use PulseAudio
+        host_apis = sd.query_hostapis()
+        for i, api in enumerate(host_apis):
+            if 'pulse' in api['name'].lower():
+                sd.default.hostapi = i
+                st.write(f"Using PulseAudio as default host API")
+                break
+except Exception as e:
+    st.write(f"Error configuring PulseAudio: {e}")
+    # Continue anyway, as we'll try other methods
 
 # Global variables for audio recording
 audio_q = queue.Queue()
