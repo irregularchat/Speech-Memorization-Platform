@@ -17,7 +17,14 @@ RUN apt-get update && \
     portaudio19-dev python3-pyaudio \
     tk-dev python3-tk \
     xvfb x11-utils \
+    alsa-utils pulseaudio pulseaudio-utils \
     && rm -rf /var/lib/apt/lists/*
+    
+# Create a directory for PulseAudio configuration
+RUN mkdir -p /etc/pulse
+
+# Create a default client.conf file
+RUN echo "default-server = unix:/tmp/pulseaudio.socket\nenable-shm = false\ndaemon-binary = /bin/true" > /etc/pulse/client.conf
 
 # Copy the requirements.txt first to leverage Docker cache
 COPY requirements.txt .
@@ -34,6 +41,8 @@ COPY . .
 # Expose the port Streamlit will run on (optional)
 EXPOSE 8880
 
-# Command to run the Streamlit app using a shell to handle environment variable substitution
-# We default to port 8880 if the PORT env var isn't defined
-CMD ["sh", "-c", "streamlit run streamlit_app.py --server.port=${PORT:-8880} --server.enableCORS=false"]
+# Make the entrypoint script executable
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Use the entrypoint script to handle audio setup and start Streamlit
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

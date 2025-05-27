@@ -53,19 +53,48 @@ def load_available_texts():
     return loaded_texts_map, titles
 
 def list_input_devices():
-    """List available input audio devices"""
-    devices = sd.query_devices()
-    input_devices = []
-    for i, device in enumerate(devices):
-        if device.get('max_input_channels', 0) > 0:
-            device_name = device.get('name', f"Device {i}")
-            input_devices.append({
-                "id": i, 
-                "name": device_name, 
-                "channels": device.get('max_input_channels'), 
-                "samplerate": device.get('default_samplerate')
-            })
-    return input_devices
+    """List available input audio devices with additional logging for debugging"""
+    try:
+        # Print debug info about the audio system
+        st.write("Checking audio system...")
+        devices = sd.query_devices()
+        st.write(f"Found {len(devices)} audio devices in total.")
+        
+        input_devices = []
+        for i, device in enumerate(devices):
+            st.write(f"Device {i}: {device}")
+            if device.get('max_input_channels', 0) > 0:
+                device_name = device.get('name', f"Device {i}")
+                input_devices.append({
+                    "id": i, 
+                    "name": device_name, 
+                    "channels": device.get('max_input_channels'), 
+                    "samplerate": device.get('default_samplerate')
+                })
+                
+        # Try to force detection of the system default device
+        try:
+            default_device = sd.default.device[0]  # Index 0 is input device
+            st.write(f"Default input device ID: {default_device}")
+            
+            # If we didn't find any input devices but have a default, add it
+            if not input_devices and default_device is not None:
+                default_info = sd.query_devices(default_device)
+                if default_info.get('max_input_channels', 0) > 0:
+                    st.write("Adding default device to list")
+                    input_devices.append({
+                        "id": default_device,
+                        "name": default_info.get('name', f"Default Device {default_device}"),
+                        "channels": default_info.get('max_input_channels'),
+                        "samplerate": default_info.get('default_samplerate')
+                    })
+        except Exception as e:
+            st.write(f"Error getting default device: {e}")
+            
+        return input_devices
+    except Exception as e:
+        st.error(f"Error listing audio devices: {e}")
+        return []
 
 def audio_callback(indata, frames, time, status):
     """This is called for each audio block"""
@@ -302,6 +331,9 @@ def main():
     # Audio recording section
     st.markdown("## Audio Recording")
     
+    # Check if running in Docker
+    in_docker = os.path.exists('/.dockerenv')
+    
     # Select microphone
     if st.session_state.audio_devices:
         device_names = [dev['name'] for dev in st.session_state.audio_devices]
@@ -332,7 +364,17 @@ def main():
                     st.session_state.is_recording = False
                     st.experimental_rerun()
     else:
-        st.error("No audio input devices found.")
+        if in_docker:
+            st.warning("No audio input devices found in Docker container. Audio recording is not available when running in Docker because containers don't have access to host audio devices by default.")
+            st.info("To use audio recording features, you can run the application directly on your host machine outside of Docker.")
+            
+            # Add a simulated recording option for testing in Docker
+            if st.button("Simulate Recording (Docker Test)"):
+                st.success("This is a simulated recording for testing the UI flow in Docker. No actual audio is being recorded.")
+                st.info("In a real recording scenario, the recorded audio would be saved to 'session_recording.wav'.")
+        else:
+            st.error("No audio input devices found. Please check if your microphone is connected and properly configured.")
+            st.info("If you have a microphone connected, try restarting the application.")
 
 if __name__ == "__main__":
     main()

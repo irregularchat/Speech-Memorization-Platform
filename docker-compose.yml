@@ -7,12 +7,21 @@ services:
     environment:
       - BASE_DOMAIN=${BASE_DOMAIN}
       - PORT=${PORT}
+      - DISPLAY=${DISPLAY}
+      - PULSE_SERVER=${PULSE_SERVER}
+      - PULSE_COOKIE=/tmp/pulse/cookie
     volumes: # mount the volumes from the host to the container
       - ./src:/app/src
       - ./data:/app/data
       - ./assets:/app/assets
       - ./utils:/app/utils
       - ./logs:/app/logs
+      - /tmp/.X11-unix:/tmp/.X11-unix # X11 forwarding
     env_file: # load the environment variables from the .env file
       - .env
+    devices:
+      - /dev/snd:/dev/snd # Audio device passthrough (works on Linux hosts)
+    # Add pulseaudio socket - may help on macOS
+    # - ${XDG_RUNTIME_DIR}/pulse:/run/pulse:ro
+    privileged: true # This gives additional permissions for device access
     restart: unless-stopped # restart the container unless it is stopped
