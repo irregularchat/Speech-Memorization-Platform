@@ -15,7 +15,9 @@ pyaudio
 openai
 # pydantic is used to validate the data types of the data
 pydantic
-# speech_recognition is used to capture audio input
-speech_recognition
+# SpeechRecognition is used to capture audio input
+SpeechRecognition
 numpy>=1.20.0
 sounddevice>=0.4.0
+# soundfile is used to save audio recordings
+soundfile>=0.12.0
