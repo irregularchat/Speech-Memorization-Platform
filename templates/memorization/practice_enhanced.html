@@ -1,0 +1,889 @@
+{% extends 'base.html' %}
+
+{% block title %}Enhanced Practice: {{ text.title }} - Speech Memorization Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Enhanced word highlighting styles */
+    .practice-text {
+        font-size: 1.4rem;
+        line-height: 2.2;
+        padding: 2rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        margin: 1rem 0;
+        font-family: 'Georgia', serif;
+        text-align: justify;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Word state styles */
+    .word-normal {
+        padding: 2px 1px;
+        border-radius: 3px;
+        transition: all 0.3s ease;
+    }
+    
+    .word-current {
+        background: linear-gradient(45deg, #ffc107, #ffeb3b);
+        color: #212529;
+        font-weight: bold;
+        padding: 4px 6px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(255,193,7,0.3);
+        animation: pulse-current 2s infinite;
+        position: relative;
+    }
+    
+    .word-current::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #ffc107, #ffeb3b);
+        border-radius: 7px;
+        z-index: -1;
+        animation: glow 2s infinite;
+    }
+    
+    .word-completed {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 2px 4px;
+        border-radius: 3px;
+        opacity: 0.8;
+        text-decoration: line-through;
+        text-decoration-color: #28a745;
+    }
+    
+    .word-masked {
+        background-color: #6c757d;
+        color: transparent;
+        padding: 2px 4px;
+        border-radius: 3px;
+        user-select: none;
+        cursor: help;
+        position: relative;
+    }
+    
+    .word-masked:hover::after {
+        content: attr(data-word);
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #343a40;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        z-index: 1000;
+    }
+    
+    .word-hint {
+        background: linear-gradient(45deg, #17a2b8, #20c997);
+        color: white;
+        font-weight: bold;
+        padding: 4px 6px;
+        border-radius: 5px;
+        animation: hint-glow 1.5s infinite;
+    }
+    
+    .word-revealed {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        color: white;
+        font-weight: bold;
+        padding: 4px 6px;
+        border-radius: 5px;
+        animation: reveal-fade 2s ease-out;
+    }
+    
+    /* Animations */
+    @keyframes pulse-current {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    @keyframes glow {
+        0%, 100% { opacity: 0.8; }
+        50% { opacity: 1; }
+    }
+    
+    @keyframes hint-glow {
+        0%, 100% { box-shadow: 0 0 5px rgba(23,162,184,0.5); }
+        50% { box-shadow: 0 0 15px rgba(23,162,184,0.8); }
+    }
+    
+    @keyframes reveal-fade {
+        0% { background: #ffc107; }
+        100% { background: linear-gradient(45deg, #28a745, #20c997); }
+    }
+    
+    /* Control panels */
+    .adaptive-controls {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+    }
+    
+    .hint-panel {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #2196f3;
+    }
+    
+    .timing-indicator {
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+    
+    .timing-progress {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+        width: 0%;
+        transition: width 0.1s linear;
+    }
+    
+    .speech-status {
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    .speech-listening {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        color: white;
+        animation: listening-pulse 1.5s infinite;
+    }
+    
+    .speech-processing {
+        background: linear-gradient(45deg, #ffc107, #ffeb3b);
+        color: #212529;
+    }
+    
+    .speech-error {
+        background: linear-gradient(45deg, #dc3545, #fd7e14);
+        color: white;
+    }
+    
+    @keyframes listening-pulse {
+        0%, 100% { opacity: 0.8; }
+        50% { opacity: 1; }
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .practice-text {
+            font-size: 1.2rem;
+            line-height: 2;
+            padding: 1rem;
+        }
+        
+        .adaptive-controls {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Main Practice Area -->
+    <div class="col-lg-8">
+        <!-- Text Header -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2><i class="fas fa-brain"></i> {{ text.title }}</h2>
+                    <div>
+                        <span class="badge bg-{{ text.difficulty }} fs-6">{{ text.get_difficulty_display }}</span>
+                        <span class="badge bg-secondary fs-6">{{ total_words }} words</span>
+                    </div>
+                </div>
+                {% if text.description %}
+                    <p class="text-muted mb-0">{{ text.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Adaptive Practice Controls -->
+        <div class="adaptive-controls">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-eye-slash"></i> Mastery Level: <span id="masteryValue">70%</span>
+                    </label>
+                    <input type="range" class="form-range" id="masterySlider" min="0" max="100" 
+                           value="70" oninput="updateMasteryDisplay()">
+                    <small class="text-muted">Hide words you've already mastered</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-clock"></i> Hint Delay: <span id="hintDelayValue">3.0s</span>
+                    </label>
+                    <input type="range" class="form-range" id="hintDelaySlider" min="1" max="10" 
+                           step="0.5" value="3.0" oninput="updateHintDelay()">
+                    <small class="text-muted">Time before offering hints</small>
+                </div>
+            </div>
+
+            <!-- Practice Mode Controls -->
+            <div class="text-center mb-3">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-success btn-lg" id="startPracticeBtn" onclick="startAdaptivePractice()">
+                        <i class="fas fa-play"></i> Start Practice
+                    </button>
+                    <button type="button" class="btn btn-warning btn-lg" id="pausePracticeBtn" onclick="pausePractice()" disabled>
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <button type="button" class="btn btn-info btn-lg" id="resumePracticeBtn" onclick="resumePractice()" disabled style="display: none;">
+                        <i class="fas fa-play"></i> Resume
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-lg" id="restartPracticeBtn" onclick="restartPractice()">
+                        <i class="fas fa-redo"></i> Restart
+                    </button>
+                </div>
+            </div>
+
+            <!-- Speech Status -->
+            <div id="speechStatus" class="speech-status" style="display: none;">
+                <i class="fas fa-microphone"></i> Ready to listen...
+            </div>
+
+            <!-- Timing Indicator -->
+            <div class="timing-indicator" style="display: none;" id="timingIndicator">
+                <div class="timing-progress" id="timingProgress"></div>
+            </div>
+
+            <!-- Hint Panel -->
+            <div class="hint-panel" id="hintPanel" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Need help with this word?</strong>
+                        <div id="hintMessage" class="small text-muted mt-1"></div>
+                    </div>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="requestHint('letter')">
+                            <i class="fas fa-font"></i> Letter
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="requestHint('partial')">
+                            <i class="fas fa-text-width"></i> Partial
+                        </button>
+                        <button type="button" class="btn btn-outline-success" onclick="requestHint('full')">
+                            <i class="fas fa-eye"></i> Full
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="skipWord()">
+                            <i class="fas fa-forward"></i> Skip
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Text Display -->
+        <div class="practice-text" id="practiceText">
+            {{ initial_display_text|safe }}
+        </div>
+
+        <!-- Progress Information -->
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span><i class="fas fa-chart-line"></i> Progress</span>
+                    <span id="progressText">0 / {{ total_words }} words</span>
+                </div>
+                <div class="progress mb-2">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 0%" id="progressBar"></div>
+                </div>
+                <div class="row text-center small">
+                    <div class="col-3">
+                        <strong id="currentWordDisplay">-</strong><br>
+                        <span class="text-muted">Current</span>
+                    </div>
+                    <div class="col-3">
+                        <strong id="attemptsDisplay">0</strong><br>
+                        <span class="text-muted">Attempts</span>
+                    </div>
+                    <div class="col-3">
+                        <strong id="hintsUsedDisplay">0</strong><br>
+                        <span class="text-muted">Hints</span>
+                    </div>
+                    <div class="col-3">
+                        <strong id="accuracyDisplay">100%</strong><br>
+                        <span class="text-muted">Accuracy</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Session Results -->
+        <div id="sessionResults" class="card mt-3" style="display: none;">
+            <div class="card-header">
+                <h4><i class="fas fa-trophy"></i> Session Complete!</h4>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h3 id="finalAccuracy" class="text-success">-</h3>
+                        <small>Final Accuracy</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 id="wordsCompleted">-</h3>
+                        <small>Words Completed</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 id="totalHints" class="text-info">-</h3>
+                        <small>Hints Used</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 id="sessionDuration">-</h3>
+                        <small>Duration</small>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <button type="button" class="btn btn-primary" onclick="startAdaptivePractice()">
+                        <i class="fas fa-redo"></i> Practice Again
+                    </button>
+                    <a href="{% url 'text_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Texts
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Current Word Info -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5><i class="fas fa-crosshairs"></i> Current Focus</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h3 id="focusWord" class="text-primary">Ready to start</h3>
+                    <p id="focusContext" class="text-muted small">Click "Start Practice" to begin</p>
+                </div>
+                <div class="row text-center mt-3">
+                    <div class="col-6">
+                        <strong id="wordPosition">0</strong><br>
+                        <small>Position</small>
+                    </div>
+                    <div class="col-6">
+                        <strong id="timeOnWord">0.0s</strong><br>
+                        <small>Time on Word</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Word Statistics -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> Word Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="text-success">{{ word_stats.mastered_words }}</h4>
+                        <small>Mastered</small>
+                    </div>
+                    <div class="col-6">
+                        <h4>{{ word_stats.total_words }}</h4>
+                        <small>Total</small>
+                    </div>
+                </div>
+                {% if word_stats.tracked_words > 0 %}
+                    <div class="row text-center mt-2">
+                        <div class="col-6">
+                            <h4 class="text-info">{{ word_stats.average_mastery|floatformat:1 }}%</h4>
+                            <small>Avg Mastery</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-warning">{{ word_stats.words_due_review }}</h4>
+                            <small>Need Review</small>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- User Progress -->
+        {% if user_progress %}
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-chart"></i> Your Progress</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Overall Mastery</span>
+                        <span>{{ user_progress.overall_mastery_percentage|floatformat:1 }}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: {{ user_progress.overall_mastery_percentage }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <strong>{{ user_progress.total_sessions }}</strong><br>
+                        <small>Sessions</small>
+                    </div>
+                    <div class="col-6">
+                        <strong>{{ user_progress.best_accuracy|floatformat:1 }}%</strong><br>
+                        <small>Best Score</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global state variables
+let practiceEngine = {
+    sessionKey: null,
+    isActive: false,
+    isPaused: false,
+    currentWord: null,
+    currentWordIndex: 0,
+    totalWords: {{ total_words }},
+    hintsUsed: 0,
+    attempts: 0,
+    startTime: null,
+    wordStartTime: null,
+    timingTimer: null,
+    hintDelaySeconds: 3.0
+};
+
+// Speech recognition (simulated for now)
+let speechRecognition = null;
+let isListening = false;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    setupSpeechRecognition();
+});
+
+// Practice control functions
+function startAdaptivePractice() {
+    fetch('{% url "start_adaptive_session" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            'text_id': {{ text.id }},
+            'session_type': 'adaptive'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            practiceEngine.sessionKey = data.session_key;
+            practiceEngine.isActive = true;
+            practiceEngine.startTime = new Date();
+            practiceEngine.currentWordIndex = data.word_index;
+            practiceEngine.currentWord = data.current_word;
+            
+            updateDisplay(data);
+            updateUI('active');
+            startWordTiming();
+            startSpeechListening();
+        } else {
+            showError('Failed to start practice session: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Network error starting practice session');
+    });
+}
+
+function pausePractice() {
+    practiceEngine.isPaused = true;
+    stopWordTiming();
+    stopSpeechListening();
+    updateUI('paused');
+}
+
+function resumePractice() {
+    practiceEngine.isPaused = false;
+    practiceEngine.wordStartTime = new Date();
+    startWordTiming();
+    startSpeechListening();
+    updateUI('active');
+}
+
+function restartPractice() {
+    if (practiceEngine.sessionKey) {
+        completePracticeSession();
+    }
+    
+    // Reset all state
+    practiceEngine = {
+        sessionKey: null,
+        isActive: false,
+        isPaused: false,
+        currentWord: null,
+        currentWordIndex: 0,
+        totalWords: {{ total_words }},
+        hintsUsed: 0,
+        attempts: 0,
+        startTime: null,
+        wordStartTime: null,
+        timingTimer: null,
+        hintDelaySeconds: parseFloat(document.getElementById('hintDelaySlider').value)
+    };
+    
+    updateUI('ready');
+    document.getElementById('practiceText').innerHTML = `{{ initial_display_text|safe }}`;
+    document.getElementById('sessionResults').style.display = 'none';
+}
+
+// Word timing and hint system
+function startWordTiming() {
+    if (practiceEngine.timingTimer) {
+        clearInterval(practiceEngine.timingTimer);
+    }
+    
+    practiceEngine.wordStartTime = new Date();
+    document.getElementById('timingIndicator').style.display = 'block';
+    
+    practiceEngine.timingTimer = setInterval(() => {
+        if (practiceEngine.isPaused || !practiceEngine.isActive) return;
+        
+        const elapsed = (new Date() - practiceEngine.wordStartTime) / 1000;
+        const progress = Math.min((elapsed / practiceEngine.hintDelaySeconds) * 100, 100);
+        
+        document.getElementById('timingProgress').style.width = progress + '%';
+        document.getElementById('timeOnWord').textContent = elapsed.toFixed(1) + 's';
+        
+        // Check if hint should be offered
+        if (elapsed >= practiceEngine.hintDelaySeconds && !document.getElementById('hintPanel').style.display === 'block') {
+            offerHint();
+        }
+    }, 100);
+}
+
+function stopWordTiming() {
+    if (practiceEngine.timingTimer) {
+        clearInterval(practiceEngine.timingTimer);
+        practiceEngine.timingTimer = null;
+    }
+    document.getElementById('timingIndicator').style.display = 'none';
+}
+
+function offerHint() {
+    const elapsed = (new Date() - practiceEngine.wordStartTime) / 1000;
+    document.getElementById('hintMessage').textContent = 
+        `You've been on "${practiceEngine.currentWord}" for ${elapsed.toFixed(1)} seconds.`;
+    document.getElementById('hintPanel').style.display = 'block';
+}
+
+// Hint request functions
+function requestHint(hintType) {
+    if (!practiceEngine.sessionKey) return;
+    
+    fetch('{% url "request_hint" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            'session_key': practiceEngine.sessionKey,
+            'hint_type': hintType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            practiceEngine.hintsUsed++;
+            updateDisplay(data);
+            document.getElementById('hintPanel').style.display = 'none';
+            document.getElementById('hintsUsedDisplay').textContent = practiceEngine.hintsUsed;
+        } else {
+            showError('Failed to apply hint: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Network error requesting hint');
+    });
+}
+
+function skipWord() {
+    if (!practiceEngine.sessionKey) return;
+    
+    fetch('{% url "advance_word" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            'session_key': practiceEngine.sessionKey
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.is_complete) {
+                completePracticeSession();
+            } else {
+                practiceEngine.currentWordIndex = data.word_index;
+                practiceEngine.currentWord = data.current_word;
+                updateDisplay(data);
+                document.getElementById('hintPanel').style.display = 'none';
+                startWordTiming();
+            }
+        } else {
+            showError('Failed to skip word: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Network error skipping word');
+    });
+}
+
+// Speech recognition setup and handling
+function setupSpeechRecognition() {
+    // Simulated speech recognition for demo
+    // In real implementation, this would use Web Speech API
+    console.log('Speech recognition setup (simulated)');
+}
+
+function startSpeechListening() {
+    isListening = true;
+    updateSpeechStatus('listening', 'Listening for speech...');
+    
+    // Simulate speech input every 2-4 seconds for demo
+    setTimeout(() => {
+        if (isListening && practiceEngine.isActive && !practiceEngine.isPaused) {
+            simulateSpeechInput();
+        }
+    }, Math.random() * 2000 + 2000);
+}
+
+function stopSpeechListening() {
+    isListening = false;
+    updateSpeechStatus('ready', 'Ready to listen...');
+}
+
+function simulateSpeechInput() {
+    // Simulate speech recognition result
+    const simulatedWords = ['the', 'quick', 'brown', 'fox', 'jumps', 'over', 'lazy', 'dog'];
+    const randomWord = simulatedWords[Math.floor(Math.random() * simulatedWords.length)];
+    
+    updateSpeechStatus('processing', 'Processing speech...');
+    
+    setTimeout(() => {
+        processSpeechInput(randomWord);
+    }, 500);
+}
+
+function processSpeechInput(spokenText) {
+    if (!practiceEngine.sessionKey || practiceEngine.isPaused) return;
+    
+    fetch('{% url "process_speech_input" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            'session_key': practiceEngine.sessionKey,
+            'spoken_text': spokenText
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        practiceEngine.attempts++;
+        document.getElementById('attemptsDisplay').textContent = practiceEngine.attempts;
+        
+        if (data.success) {
+            // Word correctly recognized - advance
+            if (data.is_complete) {
+                completePracticeSession();
+            } else {
+                practiceEngine.currentWordIndex = data.word_index;
+                practiceEngine.currentWord = data.current_word;
+                updateDisplay(data);
+                document.getElementById('hintPanel').style.display = 'none';
+                startWordTiming();
+                
+                // Continue listening if still active
+                if (isListening) {
+                    startSpeechListening();
+                }
+            }
+        } else {
+            // Word not recognized or incorrect
+            if (data.hint_applied) {
+                practiceEngine.hintsUsed++;
+                document.getElementById('hintsUsedDisplay').textContent = practiceEngine.hintsUsed;
+            }
+            updateDisplay(data);
+            
+            // Continue listening if still active
+            if (isListening) {
+                startSpeechListening();
+            }
+        }
+        
+        updateSpeechStatus('listening', 'Listening for speech...');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Network error processing speech');
+        updateSpeechStatus('error', 'Error processing speech');
+    });
+}
+
+// UI update functions
+function updateDisplay(data) {
+    if (data.display_text) {
+        document.getElementById('practiceText').innerHTML = data.display_text;
+    }
+    
+    if (data.progress !== undefined) {
+        const progress = Math.round(data.progress);
+        document.getElementById('progressBar').style.width = progress + '%';
+        document.getElementById('progressText').textContent = 
+            `${practiceEngine.currentWordIndex} / ${practiceEngine.totalWords} words`;
+    }
+    
+    if (data.current_word) {
+        document.getElementById('currentWordDisplay').textContent = data.current_word;
+        document.getElementById('focusWord').textContent = data.current_word;
+        document.getElementById('wordPosition').textContent = practiceEngine.currentWordIndex + 1;
+    }
+    
+    // Update accuracy
+    const accuracy = practiceEngine.attempts > 0 ? 
+        ((practiceEngine.currentWordIndex / practiceEngine.attempts) * 100).toFixed(0) : 100;
+    document.getElementById('accuracyDisplay').textContent = accuracy + '%';
+}
+
+function updateUI(state) {
+    const startBtn = document.getElementById('startPracticeBtn');
+    const pauseBtn = document.getElementById('pausePracticeBtn');
+    const resumeBtn = document.getElementById('resumePracticeBtn');
+    const restartBtn = document.getElementById('restartPracticeBtn');
+    
+    switch(state) {
+        case 'ready':
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            resumeBtn.style.display = 'none';
+            pauseBtn.style.display = 'inline-block';
+            document.getElementById('speechStatus').style.display = 'none';
+            document.getElementById('hintPanel').style.display = 'none';
+            break;
+        case 'active':
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            resumeBtn.style.display = 'none';
+            pauseBtn.style.display = 'inline-block';
+            document.getElementById('speechStatus').style.display = 'block';
+            break;
+        case 'paused':
+            pauseBtn.style.display = 'none';
+            resumeBtn.style.display = 'inline-block';
+            resumeBtn.disabled = false;
+            document.getElementById('speechStatus').style.display = 'none';
+            break;
+        case 'complete':
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            resumeBtn.style.display = 'none';
+            pauseBtn.style.display = 'inline-block';
+            document.getElementById('speechStatus').style.display = 'none';
+            document.getElementById('hintPanel').style.display = 'none';
+            document.getElementById('sessionResults').style.display = 'block';
+            break;
+    }
+}
+
+function updateSpeechStatus(status, message) {
+    const statusElement = document.getElementById('speechStatus');
+    statusElement.className = `speech-status speech-${status}`;
+    statusElement.innerHTML = `<i class="fas fa-microphone"></i> ${message}`;
+}
+
+function updateMasteryDisplay() {
+    const value = document.getElementById('masterySlider').value;
+    document.getElementById('masteryValue').textContent = value + '%';
+}
+
+function updateHintDelay() {
+    const value = document.getElementById('hintDelaySlider').value;
+    document.getElementById('hintDelayValue').textContent = value + 's';
+    practiceEngine.hintDelaySeconds = parseFloat(value);
+}
+
+// Session completion
+function completePracticeSession() {
+    if (!practiceEngine.sessionKey) return;
+    
+    fetch('{% url "complete_adaptive_session" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            'session_key': practiceEngine.sessionKey
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.statistics) {
+            displaySessionResults(data.statistics);
+        }
+        
+        practiceEngine.isActive = false;
+        stopWordTiming();
+        stopSpeechListening();
+        updateUI('complete');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Network error completing session');
+    });
+}
+
+function displaySessionResults(stats) {
+    document.getElementById('finalAccuracy').textContent = stats.accuracy.toFixed(1) + '%';
+    document.getElementById('wordsCompleted').textContent = stats.completed_words;
+    document.getElementById('totalHints').textContent = stats.hints_used;
+    document.getElementById('sessionDuration').textContent = (stats.duration_seconds / 60).toFixed(1) + 'm';
+}
+
+// Utility functions
+function showError(message) {
+    // Create and show error toast/alert
+    console.error(message);
+    alert('Error: ' + message); // Replace with better UI notification
+}
+</script>
+{% endblock %}

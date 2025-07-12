@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, practice_views
 
 urlpatterns = [
     # Text management
@@ -12,6 +12,18 @@ urlpatterns = [
     path('texts/<int:text_id>/duplicate/', views.duplicate_text, name='duplicate_text'),
     path('texts/<int:text_id>/toggle-visibility/', views.toggle_text_visibility, name='toggle_text_visibility'),
     
-    # AJAX endpoints
+    # Enhanced practice
+    path('practice/<int:text_id>/enhanced/', practice_views.practice_text_enhanced, name='practice_text_enhanced'),
+    
+    # Practice AJAX endpoints
+    path('api/practice/start/', practice_views.start_adaptive_session, name='start_adaptive_session'),
+    path('api/practice/speech/', practice_views.process_speech_input, name='process_speech_input'),
+    path('api/practice/hint/', practice_views.request_hint, name='request_hint'),
+    path('api/practice/advance/', practice_views.advance_word, name='advance_word'),
+    path('api/practice/timing/', practice_views.check_word_timing, name='check_word_timing'),
+    path('api/practice/complete/', practice_views.complete_adaptive_session, name='complete_adaptive_session'),
+    path('api/practice/state/', practice_views.get_session_state, name='get_session_state'),
+    
+    # Text management AJAX endpoints
     path('api/texts/create/', views.create_text_ajax, name='create_text_ajax'),
 ]

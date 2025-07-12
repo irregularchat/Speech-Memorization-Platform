@@ -21,7 +21,12 @@
                 <ul class="dropdown-menu">
                     <li>
                         <a class="dropdown-item" href="{% url 'practice_text' text.id %}">
-                            <i class="fas fa-play text-success"></i> Practice This Text
+                            <i class="fas fa-play text-success"></i> Standard Practice
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'practice_text_enhanced' text.id %}">
+                            <i class="fas fa-brain text-primary"></i> Enhanced Practice
                         </a>
                     </li>
                     {% if can_edit %}
@@ -167,9 +172,14 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h4><i class="fas fa-file-text"></i> Full Text</h4>
-                        <a href="{% url 'practice_text' text.id %}" class="btn btn-success">
-                            <i class="fas fa-play"></i> Start Practicing
-                        </a>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'practice_text' text.id %}" class="btn btn-success">
+                                <i class="fas fa-play"></i> Standard Practice
+                            </a>
+                            <a href="{% url 'practice_text_enhanced' text.id %}" class="btn btn-primary">
+                                <i class="fas fa-brain"></i> Enhanced Practice
+                            </a>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="text-display">
