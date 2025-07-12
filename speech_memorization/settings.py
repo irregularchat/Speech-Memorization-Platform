@@ -175,40 +175,24 @@ OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
 REDIS_URL = config('REDIS_URL', default='')
 CACHE_URL = config('CACHE_URL', default='')
 
-if REDIS_URL:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': CACHE_URL or REDIS_URL,
-            'OPTIONS': {
-                'CONNECTION_POOL_KWARGS': {
-                    'max_connections': 50,
-                    'retry_on_timeout': True,
-                },
-            },
-            'KEY_PREFIX': 'speech_memorization',
-            'TIMEOUT': 3600,  # 1 hour default
+# Use in-memory cache for now to avoid Redis connection issues
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'speech-memorization-cache',
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+            'CULL_FREQUENCY': 3,
         }
     }
-    
-    # Session configuration with Redis
-    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-    SESSION_CACHE_ALIAS = 'default'
-    SESSION_COOKIE_AGE = 86400  # 24 hours
-    SESSION_COOKIE_SECURE = not DEBUG
-    SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Lax'
-else:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'speech-memorization-cache',
-            'OPTIONS': {
-                'MAX_ENTRIES': 1000,
-                'CULL_FREQUENCY': 3,
-            }
-        }
-    }
+}
+
+# Use database sessions instead of Redis
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 # Logging Configuration
 LOGGING = {

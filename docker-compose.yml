@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -73,6 +71,14 @@ services:
       # Production settings
       SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-False}
       SECURE_HSTS_SECONDS: ${SECURE_HSTS_SECONDS:-0}
+      
+      # Superuser creation (optional)
+      DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME:-admin}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:-admin@example.com}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-}
+      
+      # Initial data loading
+      LOAD_INITIAL_DATA: ${LOAD_INITIAL_DATA:-false}
     volumes:
       # Application code (for development)
       - .:/app:${MOUNT_MODE:-ro}
@@ -96,6 +102,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    command: ["web"]
     env_file:
       - .env
 
@@ -124,7 +131,7 @@ services:
       dockerfile: Dockerfile
       target: ${BUILD_TARGET:-base}
     container_name: speech_memorization_celery
-    command: celery -A speech_memorization worker -l info --concurrency=2
+    command: ["celery"]
     environment:
       # Inherit same environment as web service
       DEBUG: ${DEBUG:-False}
@@ -163,7 +170,7 @@ services:
       dockerfile: Dockerfile
       target: ${BUILD_TARGET:-base}
     container_name: speech_memorization_celery_beat
-    command: celery -A speech_memorization beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    command: ["celery-beat"]
     environment:
       # Same as celery worker
       DEBUG: ${DEBUG:-False}

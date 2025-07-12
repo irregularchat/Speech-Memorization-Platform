@@ -47,15 +47,16 @@ COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel && \
     pip install -r requirements.txt
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Copy application code
 COPY . .
 
 # Create necessary directories
 RUN mkdir -p logs media static staticfiles && \
     chown -R appuser:appuser /app
-
-# Collect static files
-RUN python manage.py collectstatic --noinput --clear
 
 # Switch to non-root user
 USER appuser
@@ -67,8 +68,11 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # Expose port
 EXPOSE 8000
 
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
 # Default command
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "sync", "--timeout", "120", "--max-requests", "1000", "--max-requests-jitter", "100", "speech_memorization.wsgi:application"]
+CMD ["web"]
 
 # Development stage
 FROM base as development
@@ -82,4 +86,4 @@ RUN pip install django-debug-toolbar ipython
 USER appuser
 
 # Development command
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["web"]
