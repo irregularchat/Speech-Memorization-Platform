@@ -11,9 +11,20 @@
                 <p class="lead">Browse and manage memorization texts</p>
             </div>
             <div>
-                <button class="btn btn-success" onclick="uploadCustomText()">
-                    <i class="fas fa-plus"></i> Add Custom Text
-                </button>
+                {% if user.is_authenticated %}
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'create_text' %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Create Text
+                        </a>
+                        <a href="{% url 'upload_text_file' %}" class="btn btn-outline-success">
+                            <i class="fas fa-upload"></i> Upload File
+                        </a>
+                    </div>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-success">
+                        <i class="fas fa-sign-in-alt"></i> Login to Add Texts
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -69,9 +80,14 @@
                                             <a href="{% url 'practice_text' text.id %}" class="btn btn-primary btn-sm">
                                                 <i class="fas fa-play"></i> Practice
                                             </a>
-                                            <small class="text-muted">
-                                                {{ text.created_at|date:"M d, Y" }}
-                                            </small>
+                                            <div>
+                                                <a href="{% url 'text_detail' text.id %}" class="btn btn-outline-info btn-sm me-1">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <small class="text-muted">
+                                                    {{ text.created_at|date:"M d, Y" }}
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -111,10 +127,13 @@
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </button>
                                                 <ul class="dropdown-menu">
-                                                    <li><a class="dropdown-item" href="#"><i class="fas fa-edit"></i> Edit</a></li>
-                                                    <li><a class="dropdown-item" href="#"><i class="fas fa-share"></i> Share</a></li>
+                                                    <li><a class="dropdown-item" href="{% url 'text_detail' text.id %}"><i class="fas fa-eye"></i> View</a></li>
+                                                    <li><a class="dropdown-item" href="{% url 'edit_text' text.id %}"><i class="fas fa-edit"></i> Edit</a></li>
+                                                    <li><a class="dropdown-item" href="{% url 'toggle_text_visibility' text.id %}" onclick="return confirm('Change visibility?')">
+                                                        {% if text.is_public %}<i class="fas fa-eye-slash"></i> Make Private{% else %}<i class="fas fa-eye"></i> Make Public{% endif %}
+                                                    </a></li>
                                                     <li><hr class="dropdown-divider"></li>
-                                                    <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash"></i> Delete</a></li>
+                                                    <li><a class="dropdown-item text-danger" href="{% url 'delete_text' text.id %}"><i class="fas fa-trash"></i> Delete</a></li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -158,9 +177,9 @@
                     <div class="text-center text-muted">
                         <i class="fas fa-plus-circle fa-3x mb-3"></i>
                         <p>You haven't created any texts yet.</p>
-                        <button class="btn btn-success" onclick="uploadCustomText()">
+                        <a href="{% url 'create_text' %}" class="btn btn-success">
                             <i class="fas fa-plus"></i> Create Your First Text
-                        </button>
+                        </a>
                     </div>
                 {% endif %}
             </div>
@@ -169,100 +188,8 @@
 </div>
 {% endif %}
 
-<!-- Custom Text Upload Modal -->
-<div class="modal fade" id="uploadTextModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Custom Text</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="uploadTextForm">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label for="textTitle" class="form-label">Title</label>
-                                <input type="text" class="form-control" id="textTitle" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="textDifficulty" class="form-label">Difficulty</label>
-                                <select class="form-select" id="textDifficulty">
-                                    <option value="beginner">Beginner</option>
-                                    <option value="intermediate">Intermediate</option>
-                                    <option value="advanced">Advanced</option>
-                                    <option value="expert">Expert</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="textContent" class="form-label">Text Content</label>
-                        <textarea class="form-control" id="textContent" rows="10" required placeholder="Enter the text you want to memorize..."></textarea>
-                        <div class="form-text">Word count: <span id="wordCount">0</span></div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="textDescription" class="form-label">Description (Optional)</label>
-                        <textarea class="form-control" id="textDescription" rows="2" placeholder="Brief description of this text..."></textarea>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="textTags" class="form-label">Tags (Optional)</label>
-                                <input type="text" class="form-control" id="textTags" placeholder="speech, military, historical">
-                                <div class="form-text">Separate tags with commas</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="textTimeLimit" class="form-label">Time Limit (minutes)</label>
-                                <input type="number" class="form-control" id="textTimeLimit" min="1" placeholder="Optional">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="makePublic">
-                        <label class="form-check-label" for="makePublic">
-                            Make this text public for other users
-                        </label>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" onclick="saveCustomText()">
-                    <i class="fas fa-save"></i> Save Text
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-function uploadCustomText() {
-    new bootstrap.Modal(document.getElementById('uploadTextModal')).show();
-}
-
-function saveCustomText() {
-    // This would integrate with Django form handling
-    // For now, show a placeholder message
-    alert('Custom text upload feature will be implemented in the next development phase.');
-    bootstrap.Modal.getInstance(document.getElementById('uploadTextModal')).hide();
-}
-
-// Word counter
-document.getElementById('textContent').addEventListener('input', function() {
-    const content = this.value.trim();
-    const wordCount = content ? content.split(/\s+/).length : 0;
-    document.getElementById('wordCount').textContent = wordCount;
-});
-</script>
+<!-- No additional JavaScript needed - using Django forms -->
 {% endblock %}

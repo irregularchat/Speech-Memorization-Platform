@@ -29,7 +29,8 @@ urlpatterns = [
     path('', core_views.home, name='home'),
     path('practice/<int:text_id>/', core_views.practice_text, name='practice_text'),
     path('analytics/', core_views.analytics, name='analytics'),
-    path('texts/', core_views.text_list, name='text_list'),
+    # Include memorization app URLs
+    path('', include('memorization.urls')),
     path('about/', core_views.about, name='about'),
     
     # AJAX endpoints
