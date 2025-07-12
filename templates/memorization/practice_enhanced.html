@@ -183,6 +183,126 @@
         50% { opacity: 1; }
     }
     
+    /* Volume indicator styles */
+    .volume-indicator {
+        background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+        border-radius: 8px;
+        padding: 0.75rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .volume-bars {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 2px;
+        height: 20px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .volume-bar {
+        width: 4px;
+        background: #28a745;
+        border-radius: 2px;
+        transition: height 0.1s ease;
+        height: 2px;
+    }
+    
+    .volume-bar.active {
+        background: #20c997;
+    }
+    
+    /* AI Feedback Panel */
+    .ai-feedback-panel {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        border: 1px solid #ffc107;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        animation: slideDown 0.3s ease-out;
+    }
+    
+    .feedback-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #ffc107;
+        background: rgba(255, 193, 7, 0.1);
+        border-radius: 10px 10px 0 0;
+    }
+    
+    .feedback-content {
+        padding: 1rem;
+    }
+    
+    .transcription-display {
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 5px;
+        border-left: 3px solid #007bff;
+        margin: 0.5rem 0;
+        font-style: italic;
+    }
+    
+    .confidence-meter {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+    }
+    
+    .confidence-bar {
+        flex: 1;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        transition: width 0.3s ease;
+        border-radius: 4px;
+    }
+    
+    .confidence-high { background: #28a745; }
+    .confidence-medium { background: #ffc107; }
+    .confidence-low { background: #dc3545; }
+    
+    .pronunciation-tips {
+        background: #e3f2fd;
+        border-left: 3px solid #2196f3;
+        padding: 0.75rem;
+        border-radius: 5px;
+        margin: 0.5rem 0;
+    }
+    
+    .pronunciation-tips ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+    
+    @keyframes slideDown {
+        0% { opacity: 0; transform: translateY(-10px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Microphone test modal */
+    .mic-test-result {
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .quality-indicator {
+        font-size: 2rem;
+        margin: 1rem 0;
+    }
+    
+    .quality-good { color: #28a745; }
+    .quality-fair { color: #ffc107; }
+    .quality-poor { color: #dc3545; }
+    
     /* Responsive adjustments */
     @media (max-width: 768px) {
         .practice-text {
@@ -260,6 +380,29 @@
             <!-- Speech Status -->
             <div id="speechStatus" class="speech-status" style="display: none;">
                 <i class="fas fa-microphone"></i> Ready to listen...
+            </div>
+
+            <!-- Volume Indicator -->
+            <div id="volumeIndicator" class="volume-indicator" style="display: none;">
+                <div class="volume-bars">
+                    <div class="volume-bar"></div>
+                    <div class="volume-bar"></div>
+                    <div class="volume-bar"></div>
+                    <div class="volume-bar"></div>
+                    <div class="volume-bar"></div>
+                </div>
+                <small class="text-muted">Speak now...</small>
+            </div>
+
+            <!-- AI Feedback Panel -->
+            <div id="aiFeedbackPanel" class="ai-feedback-panel" style="display: none;">
+                <div class="feedback-header">
+                    <strong><i class="fas fa-robot"></i> AI Analysis</strong>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="hideAIFeedback()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="aiFeedbackContent" class="feedback-content"></div>
             </div>
 
             <!-- Timing Indicator -->
@@ -455,6 +598,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% load static %}{% static 'js/ai_speech_recorder.js' %}"></script>
 <script>
 // Global state variables
 let practiceEngine = {
@@ -472,13 +616,14 @@ let practiceEngine = {
     hintDelaySeconds: 3.0
 };
 
-// Speech recognition (simulated for now)
-let speechRecognition = null;
+// AI Speech recognition
+let aiSpeechManager = null;
 let isListening = false;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    setupSpeechRecognition();
+    setupEventListeners();
+    addMicrophoneTestButton();
 });
 
 // Practice control functions
@@ -506,7 +651,7 @@ function startAdaptivePractice() {
             updateDisplay(data);
             updateUI('active');
             startWordTiming();
-            startSpeechListening();
+            initializeAISpeech();
         } else {
             showError('Failed to start practice session: ' + data.error);
         }
@@ -665,98 +810,123 @@ function skipWord() {
     });
 }
 
-// Speech recognition setup and handling
-function setupSpeechRecognition() {
-    // Simulated speech recognition for demo
-    // In real implementation, this would use Web Speech API
-    console.log('Speech recognition setup (simulated)');
+// AI Speech recognition setup and handling
+function setupEventListeners() {
+    // Listen for speech volume updates
+    window.addEventListener('speechVolumeUpdate', (event) => {
+        updateVolumeIndicator(event.detail.volume);
+    });
+    
+    // Listen for microphone test completion
+    window.addEventListener('microphoneTestComplete', (event) => {
+        displayMicrophoneTestResults(event.detail);
+    });
 }
 
-function startSpeechListening() {
-    isListening = true;
-    updateSpeechStatus('listening', 'Listening for speech...');
+async function initializeAISpeech() {
+    if (!practiceEngine.sessionKey) return;
     
-    // Simulate speech input every 2-4 seconds for demo
-    setTimeout(() => {
-        if (isListening && practiceEngine.isActive && !practiceEngine.isPaused) {
-            simulateSpeechInput();
-        }
-    }, Math.random() * 2000 + 2000);
+    try {
+        aiSpeechManager = new AISpeechPracticeManager(practiceEngine.sessionKey, {
+            onSpeechProcessed: handleAISpeechResult,
+            onError: handleSpeechError,
+            onStatusChange: updateSpeechStatus
+        });
+        
+        await aiSpeechManager.initializeRecorder();
+        startContinuousListening();
+        
+    } catch (error) {
+        console.error('Failed to initialize AI speech:', error);
+        showError('Microphone setup failed: ' + error.message);
+    }
+}
+
+async function startContinuousListening() {
+    if (!aiSpeechManager || !practiceEngine.isActive || practiceEngine.isPaused) return;
+    
+    isListening = true;
+    document.getElementById('volumeIndicator').style.display = 'block';
+    
+    try {
+        await aiSpeechManager.startListening();
+        
+        // Auto-restart listening after processing (for continuous mode)
+        setTimeout(() => {
+            if (isListening && practiceEngine.isActive && !practiceEngine.isPaused) {
+                startContinuousListening();
+            }
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Failed to start listening:', error);
+        handleSpeechError('Failed to start speech recognition: ' + error.message);
+    }
 }
 
 function stopSpeechListening() {
     isListening = false;
+    document.getElementById('volumeIndicator').style.display = 'none';
+    
+    if (aiSpeechManager) {
+        aiSpeechManager.stopListening();
+    }
+    
     updateSpeechStatus('ready', 'Ready to listen...');
 }
 
-function simulateSpeechInput() {
-    // Simulate speech recognition result
-    const simulatedWords = ['the', 'quick', 'brown', 'fox', 'jumps', 'over', 'lazy', 'dog'];
-    const randomWord = simulatedWords[Math.floor(Math.random() * simulatedWords.length)];
+function handleAISpeechResult(result) {
+    practiceEngine.attempts++;
+    document.getElementById('attemptsDisplay').textContent = practiceEngine.attempts;
     
-    updateSpeechStatus('processing', 'Processing speech...');
+    // Display AI feedback
+    if (result.ai_analysis) {
+        displayAIFeedback(result.ai_analysis, result.success);
+    }
     
-    setTimeout(() => {
-        processSpeechInput(randomWord);
-    }, 500);
+    if (result.success) {
+        // Word correctly recognized - advance
+        hideAIFeedback();
+        
+        if (result.is_complete) {
+            completePracticeSession();
+        } else {
+            practiceEngine.currentWordIndex = result.word_index;
+            practiceEngine.currentWord = result.current_word;
+            updateDisplay(result);
+            document.getElementById('hintPanel').style.display = 'none';
+            startWordTiming();
+        }
+    } else {
+        // Word not recognized or incorrect
+        if (result.hint_applied) {
+            practiceEngine.hintsUsed++;
+            document.getElementById('hintsUsedDisplay').textContent = practiceEngine.hintsUsed;
+        }
+        updateDisplay(result);
+        
+        // Show detailed feedback for failed attempts
+        if (result.ai_analysis && result.ai_analysis.suggestions) {
+            setTimeout(() => {
+                if (!result.hint_applied) {
+                    document.getElementById('hintPanel').style.display = 'block';
+                }
+            }, 2000);
+        }
+    }
 }
 
-function processSpeechInput(spokenText) {
-    if (!practiceEngine.sessionKey || practiceEngine.isPaused) return;
+function handleSpeechError(error) {
+    console.error('Speech error:', error);
+    updateSpeechStatus('error', 'Speech recognition error');
     
-    fetch('{% url "process_speech_input" %}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken
-        },
-        body: JSON.stringify({
-            'session_key': practiceEngine.sessionKey,
-            'spoken_text': spokenText
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        practiceEngine.attempts++;
-        document.getElementById('attemptsDisplay').textContent = practiceEngine.attempts;
-        
-        if (data.success) {
-            // Word correctly recognized - advance
-            if (data.is_complete) {
-                completePracticeSession();
-            } else {
-                practiceEngine.currentWordIndex = data.word_index;
-                practiceEngine.currentWord = data.current_word;
-                updateDisplay(data);
-                document.getElementById('hintPanel').style.display = 'none';
-                startWordTiming();
-                
-                // Continue listening if still active
-                if (isListening) {
-                    startSpeechListening();
-                }
-            }
-        } else {
-            // Word not recognized or incorrect
-            if (data.hint_applied) {
-                practiceEngine.hintsUsed++;
-                document.getElementById('hintsUsedDisplay').textContent = practiceEngine.hintsUsed;
-            }
-            updateDisplay(data);
-            
-            // Continue listening if still active
-            if (isListening) {
-                startSpeechListening();
-            }
+    // Try to restart listening after a delay
+    setTimeout(() => {
+        if (practiceEngine.isActive && !practiceEngine.isPaused) {
+            updateSpeechStatus('ready', 'Retrying...');
+            startContinuousListening();
         }
-        
-        updateSpeechStatus('listening', 'Listening for speech...');
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showError('Network error processing speech');
-        updateSpeechStatus('error', 'Error processing speech');
-    });
+    }, 2000);
 }
 
 // UI update functions
@@ -880,10 +1050,217 @@ function displaySessionResults(stats) {
 }
 
 // Utility functions
+// AI Feedback and UI functions
+function displayAIFeedback(aiAnalysis, isSuccess) {
+    const panel = document.getElementById('aiFeedbackPanel');
+    const content = document.getElementById('aiFeedbackContent');
+    
+    let feedbackHTML = '';
+    
+    // Transcription display
+    if (aiAnalysis.transcription) {
+        feedbackHTML += `
+            <div class="transcription-display">
+                <strong>You said:</strong> "${aiAnalysis.transcription}"
+            </div>
+        `;
+    }
+    
+    // Confidence meter
+    if (typeof aiAnalysis.confidence === 'number') {
+        const confidencePercent = Math.round(aiAnalysis.confidence * 100);
+        const confidenceClass = confidencePercent > 80 ? 'confidence-high' : 
+                              confidencePercent > 50 ? 'confidence-medium' : 'confidence-low';
+        
+        feedbackHTML += `
+            <div class="confidence-meter">
+                <span>Confidence:</span>
+                <div class="confidence-bar">
+                    <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
+                </div>
+                <span>${confidencePercent}%</span>
+            </div>
+        `;
+    }
+    
+    // Expected vs spoken
+    if (aiAnalysis.expected_word && aiAnalysis.transcription) {
+        feedbackHTML += `
+            <div class="mb-2">
+                <strong>Expected:</strong> "${aiAnalysis.expected_word}"<br>
+                <strong>Recognition:</strong> ${isSuccess ? '✅ Correct!' : '❌ Not matched'}
+            </div>
+        `;
+    }
+    
+    // AI feedback message
+    if (aiAnalysis.feedback && aiAnalysis.feedback.ai_analysis) {
+        feedbackHTML += `
+            <div class="alert alert-info">
+                <strong>💡 AI Coach:</strong> ${aiAnalysis.feedback.ai_analysis}
+            </div>
+        `;
+    }
+    
+    // Pronunciation tips
+    if (aiAnalysis.suggestions && aiAnalysis.suggestions.length > 0) {
+        feedbackHTML += `
+            <div class="pronunciation-tips">
+                <strong>💭 Suggestions:</strong>
+                <ul>
+                    ${aiAnalysis.suggestions.map(tip => `<li>${tip}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+    
+    // Accuracy breakdown
+    if (typeof aiAnalysis.accuracy === 'number') {
+        feedbackHTML += `
+            <div class="small text-muted">
+                Accuracy: ${Math.round(aiAnalysis.accuracy)}% | 
+                Error type: ${aiAnalysis.error_type || 'Unknown'}
+            </div>
+        `;
+    }
+    
+    content.innerHTML = feedbackHTML;
+    panel.style.display = 'block';
+    
+    // Auto-hide after delay if successful
+    if (isSuccess) {
+        setTimeout(() => hideAIFeedback(), 3000);
+    }
+}
+
+function hideAIFeedback() {
+    document.getElementById('aiFeedbackPanel').style.display = 'none';
+}
+
+function updateVolumeIndicator(volume) {
+    const volumeBars = document.querySelectorAll('.volume-bar');
+    const activeCount = Math.ceil(volume * volumeBars.length);
+    
+    volumeBars.forEach((bar, index) => {
+        if (index < activeCount) {
+            bar.classList.add('active');
+            bar.style.height = `${Math.min(20, 4 + (index + 1) * 3)}px`;
+        } else {
+            bar.classList.remove('active');
+            bar.style.height = '2px';
+        }
+    });
+}
+
+function addMicrophoneTestButton() {
+    // Add microphone test button to controls
+    const controlsDiv = document.querySelector('.adaptive-controls .text-center');
+    if (controlsDiv) {
+        const testButton = document.createElement('button');
+        testButton.className = 'btn btn-outline-info btn-sm ms-2';
+        testButton.innerHTML = '<i class="fas fa-microphone-alt"></i> Test Mic';
+        testButton.onclick = testMicrophone;
+        
+        controlsDiv.appendChild(testButton);
+    }
+}
+
+async function testMicrophone() {
+    const testRecorder = new AISpeechRecorder({
+        maxRecordingTime: 3000, // 3 seconds
+        onRecordingStop: (data) => {
+            sendMicrophoneTest(data);
+        },
+        onError: (error) => {
+            showError('Microphone test failed: ' + error);
+        }
+    });
+    
+    updateSpeechStatus('recording', 'Testing microphone... speak now!');
+    
+    try {
+        await testRecorder.startRecording();
+    } catch (error) {
+        showError('Failed to start microphone test: ' + error.message);
+    }
+}
+
+async function sendMicrophoneTest(recordingData) {
+    try {
+        updateSpeechStatus('processing', 'Analyzing audio quality...');
+        
+        const response = await fetch('/api/practice/test-microphone/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                audio_data: recordingData.base64Data,
+                audio_format: recordingData.format
+            })
+        });
+        
+        const result = await response.json();
+        displayMicrophoneTestResults(result);
+        
+    } catch (error) {
+        showError('Network error during microphone test: ' + error.message);
+    } finally {
+        updateSpeechStatus('ready', 'Test complete');
+    }
+}
+
+function displayMicrophoneTestResults(result) {
+    if (!result.success) {
+        showError('Microphone test failed: ' + result.error);
+        return;
+    }
+    
+    const { quality_rating, recommendations, transcription_test } = result;
+    
+    // Create modal or alert with results
+    const qualityIcon = quality_rating === 'good' ? '✅' : 
+                       quality_rating === 'fair' ? '⚠️' : '❌';
+    
+    let message = `${qualityIcon} Microphone Quality: ${quality_rating.toUpperCase()}\n\n`;
+    
+    if (transcription_test.success) {
+        message += `✅ Speech Recognition Test: PASSED\n`;
+        message += `📝 Detected: "${transcription_test.text}"\n`;
+        message += `🎯 Confidence: ${Math.round(transcription_test.confidence * 100)}%\n\n`;
+    } else {
+        message += `❌ Speech Recognition Test: FAILED\n\n`;
+    }
+    
+    if (recommendations.length > 0) {
+        message += `💡 Recommendations:\n${recommendations.map(r => `• ${r}`).join('\n')}`;
+    }
+    
+    alert(message); // Replace with better modal in production
+}
+
 function showError(message) {
-    // Create and show error toast/alert
     console.error(message);
-    alert('Error: ' + message); // Replace with better UI notification
+    // Create better error notification in production
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'alert alert-danger alert-dismissible fade show';
+    errorDiv.style.position = 'fixed';
+    errorDiv.style.top = '20px';
+    errorDiv.style.right = '20px';
+    errorDiv.style.zIndex = '9999';
+    errorDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    `;
+    document.body.appendChild(errorDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (errorDiv.parentElement) {
+            errorDiv.remove();
+        }
+    }, 5000);
 }
 </script>
 {% endblock %}
