@@ -44,12 +44,28 @@ uploaded_file = st.sidebar.file_uploader("Upload custom text", type="txt")
 
 # Display text (user can adjust the speed of words per minute)
 if selected_text and selected_text != "No texts available" or uploaded_file:
-    if uploaded_file:
-        st.session_state.current_text = text_parser.load_text_from_file(uploaded_file)
-    else:
-        st.session_state.current_text = text_parser.load_text_from_file(f"data/pre_texts/{selected_text}.txt")
-    
-    current_text = st.session_state.current_text
+    try:
+        if uploaded_file:
+            st.session_state.current_text = text_parser.load_text_from_file(uploaded_file)
+            st.success("Custom text loaded successfully!")
+        else:
+            st.session_state.current_text = text_parser.load_text_from_file(f"data/pre_texts/{selected_text}.txt")
+            st.success(f"Text '{selected_text}' loaded successfully!")
+        
+        current_text = st.session_state.current_text
+        
+    except FileNotFoundError as e:
+        st.error(f"❌ File not found: {e}")
+        st.stop()
+    except ValueError as e:
+        st.error(f"❌ Invalid file: {e}")
+        st.stop()
+    except PermissionError as e:
+        st.error(f"❌ Permission denied: {e}")
+        st.stop()
+    except Exception as e:
+        st.error(f"❌ Error loading text: {e}")
+        st.stop()
 
     st.subheader("Text to Memorize")
     
@@ -184,6 +200,11 @@ if st.button("📝 Record and Transcribe"):
     if 'current_text' in locals() and current_text:
         with st.spinner(f"Recording for {recording_duration} seconds..."):
             transcribed_text = audio_handler.record_live_audio(recording_duration)
+            
+        # Check if recording was successful
+        if transcribed_text.startswith(("Recording timeout", "Could not", "Error", "Invalid", "Microphone not", "Speech recognition")):
+            st.error(f"❌ Recording failed: {transcribed_text}")
+            st.stop()
         st.session_state.transcribed_text = transcribed_text
         st.write("Transcribed Text:")
         st.write(transcribed_text)
@@ -239,21 +260,35 @@ st.write("Or upload an audio file:")
 audio_file = st.file_uploader("Upload your audio file", type=["wav", "mp3"])
 
 if audio_file:
-    st.write("Processing audio...")
-    transcribed_text = audio_handler.transcribe_audio(audio_file)
-    st.write("Transcribed Text:")
-    st.write(transcribed_text)
+    try:
+        st.write("Processing audio...")
+        transcribed_text = audio_handler.transcribe_audio(audio_file)
+        
+        # Check if transcription was successful
+        if transcribed_text.startswith(("Could not", "Speech recognition", "Invalid", "No speech", "Unexpected")):
+            st.error(f"❌ Transcription failed: {transcribed_text}")
+        else:
+            st.write("Transcribed Text:")
+            st.write(transcribed_text)
 
-    # Compare transcribed text with the original
-    if 'current_text' in locals() and current_text:
-        comparison_results = text_parser.compare_text(transcribed_text, current_text)
-        st.write("Comparison Results:")
-        st.write(comparison_results['differences'])
+            # Compare transcribed text with the original
+            if 'current_text' in locals() and current_text:
+                try:
+                    comparison_results = text_parser.compare_text(transcribed_text, current_text)
+                    st.write("Comparison Results:")
+                    st.write(comparison_results['differences'])
 
-        # Update and display user performance statistics
-        user_management.update_stats(comparison_results)
-        st.write(f"Total Words: {comparison_results['total_words']}")
-        st.write(f"Errors: {comparison_results['errors']}")
+                    # Update and display user performance statistics
+                    user_management.update_stats(comparison_results)
+                    st.write(f"Total Words: {comparison_results['total_words']}")
+                    st.write(f"Errors: {comparison_results['errors']}")
+                except Exception as e:
+                    st.error(f"❌ Error comparing texts: {e}")
+            else:
+                st.warning("⚠️ No text selected for comparison")
+                
+    except Exception as e:
+        st.error(f"❌ Error processing audio file: {e}")
 
 # Performance Analytics Sidebar
 st.sidebar.subheader("📊 Performance Analytics")
