@@ -1,35 +1,85 @@
-# Use the official Python image as the base image
-FROM python:3.9-slim
+# Multi-stage build for Speech Memorization Platform with AI
+FROM python:3.11-slim as base
 
-# Set environment variables for non-interactive installation
-ENV DEBIAN_FRONTEND=noninteractive
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Set the working directory inside the container
-WORKDIR /app
-
-# Install system-level dependencies (including PortAudio for PyAudio)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential gcc libssl-dev libffi-dev libasound2-dev \
-    libxml2-dev libxslt1-dev zlib1g-dev portaudio19-dev \
+# Install system dependencies for AI processing
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Build essentials
+    build-essential \
+    gcc \
+    g++ \
+    # Audio processing libraries
+    libsndfile1-dev \
+    libsndfile1 \
+    portaudio19-dev \
+    libasound2-dev \
+    pulseaudio \
+    # FFmpeg for audio format conversion
+    ffmpeg \
+    # SSL and compression
+    libssl-dev \
+    libffi-dev \
+    zlib1g-dev \
+    # PostgreSQL client
+    libpq-dev \
+    # Git for potential package installations
+    git \
+    # Cleanup
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements.txt first to leverage Docker cache
+# Create app user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install the Python dependencies
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# Install Python dependencies
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install -r requirements.txt
 
-# Copy the specific app.py file to the working directory
-COPY app.py /app/app.py
-
-# Copy all application files into the container
+# Copy application code
 COPY . .
-## Debug by listing to make sure /app/app.py is in the container
-RUN ls -l /app
-# Expose the port Streamlit will run on (optional)
-EXPOSE 8880
 
-# Command to run the Streamlit app
-CMD ["sh", "-c", "streamlit run app.py --server.port=${PORT:-8880} --server.enableCORS=false"]
+# Create necessary directories
+RUN mkdir -p logs media static staticfiles && \
+    chown -R appuser:appuser /app
+
+# Collect static files
+RUN python manage.py collectstatic --noinput --clear
+
+# Switch to non-root user
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python manage.py check --deploy || exit 1
+
+# Expose port
+EXPOSE 8000
+
+# Default command
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "sync", "--timeout", "120", "--max-requests", "1000", "--max-requests-jitter", "100", "speech_memorization.wsgi:application"]
+
+# Development stage
+FROM base as development
+
+USER root
+
+# Install development dependencies
+RUN pip install django-debug-toolbar ipython
+
+# Switch back to app user
+USER appuser
+
+# Development command
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
