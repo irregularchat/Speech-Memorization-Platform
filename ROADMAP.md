@@ -49,9 +49,31 @@ The following files are required to be created to prevent future fracturing of t
   - [./tests/](./tests/) # folder containing test files
 
 ## File Navigation:
-### Python Files
-- [./app.py](./app.py) # main app file
-- [./requirements.txt](./requirements.txt) # requirements file for the app containing the dependencies that need to be installed to run the app. This is used by Dockerfile to install the dependencies.
+
+### Current Structure (Streamlit-based):
+- [./app.py](./app.py) # main streamlit app file (TO BE MIGRATED)
+- [./requirements.txt](./requirements.txt) # current dependencies (TO BE UPDATED for Django)
+
+### Future Structure (Post-Django Migration):
+- [./manage.py](./manage.py) # Django management script
+- [./speech_memorization/](./speech_memorization/) # Django project root
+  - [./speech_memorization/settings/](./speech_memorization/settings/) # settings module
+  - [./speech_memorization/urls.py](./speech_memorization/urls.py) # main URL configuration
+  - [./speech_memorization/wsgi.py](./speech_memorization/wsgi.py) # WSGI application
+  - [./speech_memorization/asgi.py](./speech_memorization/asgi.py) # ASGI application for WebSockets
+- [./apps/](./apps/) # Django applications
+  - [./apps/core/](./apps/core/) # core functionality
+  - [./apps/memorization/](./apps/memorization/) # memorization logic and models
+  - [./apps/analytics/](./apps/analytics/) # analytics and reporting
+  - [./apps/users/](./apps/users/) # user management
+  - [./apps/api/](./apps/api/) # REST API endpoints
+- [./templates/](./templates/) # Django HTML templates
+- [./static/](./static/) # CSS, JavaScript, images
+- [./media/](./media/) # User-uploaded files
+- [./requirements/](./requirements/) # environment-specific requirements
+  - [./requirements/base.txt](./requirements/base.txt) # base requirements
+  - [./requirements/development.txt](./requirements/development.txt) # dev requirements
+  - [./requirements/production.txt](./requirements/production.txt) # production requirements
 
 ### Docker Files
 - [./docker-compose.yml](./docker-compose.yml) # docker compose file for running the app in a container and installing dependencies that will work on any system
@@ -85,37 +107,108 @@ The following files are required to be created to prevent future fracturing of t
 - [./CONTRIBUTING.md](./CONTRIBUTING.md) # contributing file
 
 ## TODO Functions:
-### App Basics
-- [ ] Display the app title and basic box where the text will be displayed 
-- [ ] Add buttons for the app
-  - [ ] Microphone button
-  - [ ] Pause / Play  button
-  - [ ] Restart button
-  - [ ] Select Text button
-  - [ ] Add Custom Text button
+
+### CRITICAL: Framework Migration
+- [ ] **Convert from Streamlit to Django** - PRIORITY 1
+
+#### Phase 1: Django Foundation (Week 1-2)
+- [ ] Create Django project: `django-admin startproject speech_memorization`
+- [ ] Setup Django apps: `core`, `memorization`, `analytics`, `users`, `api`
+- [ ] Configure Django settings for development/staging/production environments
+- [ ] Setup PostgreSQL database (migrate from file-based storage)
+- [ ] Create base Django models (User, Text, Session, WordProgress, Analytics)
+- [ ] Setup Django admin interface with custom admin classes
+- [ ] Configure static files handling (CSS/JS) and media files (audio uploads)
+- [ ] Setup Django REST Framework for API endpoints
+
+#### Phase 2: Core Feature Migration (Week 3-4)
+- [ ] **Text Management Models**: 
+  - [ ] Text model (title, content, description, tags, difficulty)
+  - [ ] TextSection model (for paragraph/sentence practice)
+  - [ ] Custom text upload and processing
+- [ ] **Spaced Repetition Engine**:
+  - [ ] WordProgress model (word, mastery_level, easiness_factor, interval)
+  - [ ] Migrate spaced_repetition.py logic to Django services
+  - [ ] Background task processing with Celery for word calculations
+- [ ] **Audio Processing**:
+  - [ ] AudioSession model (recording metadata, transcription results)
+  - [ ] Migrate audio_handler.py to Django views with WebSocket support
+  - [ ] Real-time audio streaming with Django Channels
+
+#### Phase 3: Frontend Development (Week 5-6)
+- [ ] **Modern Frontend Stack**:
+  - [ ] HTML5 templates with Bootstrap 5 or Tailwind CSS
+  - [ ] JavaScript for real-time features (Web Audio API, WebSockets)
+  - [ ] Progressive Web App (PWA) capabilities for mobile
+  - [ ] Responsive design for mobile/tablet/desktop
+- [ ] **Interactive Components**:
+  - [ ] Real-time text display with auto-scroll (JavaScript timers)
+  - [ ] Audio recording controls with visual feedback
+  - [ ] Interactive analytics dashboard with Chart.js/D3.js
+  - [ ] Drag-and-drop text upload interface
+
+#### Phase 4: User System & Analytics (Week 7-8)
+- [ ] **Authentication System**:
+  - [ ] Django User model extension with profiles
+  - [ ] Registration, login, password reset flows
+  - [ ] Social authentication (Google, GitHub) with django-allauth
+  - [ ] User preferences and settings
+- [ ] **Advanced Analytics**:
+  - [ ] Migrate analytics.py to Django with proper database queries
+  - [ ] Real-time analytics dashboard with filtering
+  - [ ] Export capabilities (PDF reports, CSV data)
+  - [ ] Performance trend visualizations
+
+#### Phase 5: Production Setup (Week 9-10)
+- [ ] **Deployment Configuration**:
+  - [ ] Docker multi-stage builds (development/production)
+  - [ ] nginx reverse proxy configuration
+  - [ ] gunicorn/uvicorn ASGI server setup
+  - [ ] PostgreSQL + Redis for caching and sessions
+- [ ] **Performance & Security**:
+  - [ ] Database query optimization and indexing
+  - [ ] Redis caching for frequently accessed data
+  - [ ] Security headers, CSRF protection, rate limiting
+  - [ ] SSL certificate configuration
+- [ ] **Testing & CI/CD**:
+  - [ ] Comprehensive test suite (unit, integration, e2e)
+  - [ ] GitHub Actions for automated testing and deployment
+  - [ ] Environment-specific configurations (dev/staging/prod)
+
+### App Basics (Post-Django Migration)
+- [x] Display the app title and basic box where the text will be displayed 
+- [x] Add buttons for the app
+  - [x] Microphone button
+  - [x] Pause / Play  button
+  - [x] Restart button
+  - [x] Select Text button
+  - [x] Add Custom Text button
 - [ ] Format speech text file in formatting that has the following and can be parsed by the app:
     - [ ] Title
     - [ ] Text
     - [ ] Time limit (optional)
     - [ ] Description (optional)
     - [ ] Tags (optional)
-- [ ] Create a sidebar for text selection
-- [ ] Load pre-established text from files # from data/pre_texts/
-- [ ] Display text similar to apple music or spotify or yt music lyrics, moving up the screen as the text is memorized 
-- [ ] Allow changing words per minute speed of the text memorization
-- [ ] Text background container created that can be highlighted or can be used to cover the text to show the space for a word to be memorized.
+- [x] Create a sidebar for text selection
+- [x] Load pre-established text from files # from data/pre_texts/
+- [x] Display text similar to apple music or spotify or yt music lyrics, moving up the screen as the text is memorized 
+- [x] Allow changing words per minute speed of the text memorization
+- [x] Text background container created that can be highlighted or can be used to cover the text to show the space for a word to be memorized.
+
 ### Audio Processing
-- [ ] Capture audio input from the microphone
-- [ ] Transcribe the audio input to text
-- [ ] Compare the transcribed text with the original text
+- [x] Capture audio input from the microphone
+- [x] Transcribe the audio input to text
+- [x] Compare the transcribed text with the original text
+
 ### Anki Style Delayed Recall 
 - [ ] Identify stop words that are not needed to be removed like the , and , etc.
-- [ ] Automatically remove x amount of words from throughout the text once the user has memorized them (automatically) or manually (by the user) based on percentage of text memorized 0-100% where 0% is none memorized (all displayed) and 100% is all text memorized (zero displayed)
+- [x] Automatically remove x amount of words from throughout the text once the user has memorized them (automatically) or manually (by the user) based on percentage of text memorized 0-100% where 0% is none memorized (all displayed) and 100% is all text memorized (zero displayed)
+
 ### Performance Statistics
-- [ ] Calculate performance statistics
-- [ ] Display the highlighted text and statistics to the user
-- [ ] Log the session results to a log file for progress tracking
-### User Account Management
+- [x] Calculate performance statistics
+- [x] Display the highlighted text and statistics to the user
+- [x] Log the session results to a log file for progress tracking
+### User Account Management (Requires Django Migration)
 - [ ] Create User Account Management with OIDC
   - [ ] Create a user profile page
   - [ ] Allow custom text files to be shared between users # community
@@ -123,6 +216,32 @@ The following files are required to be created to prevent future fracturing of t
   - [ ] Create a leaderboard for users # gamification
   - [ ] Create a community forum for users to discuss the app # forum.irregularchat.com
   - [x] Create a helpdesk for users to get support # Matrix Room 
+
+## Django Migration Benefits:
+
+### Why Django Over Streamlit:
+- **Proper User Authentication**: Django's built-in user system vs Streamlit's session-only state
+- **Database Integration**: Full ORM with migrations vs file-based storage
+- **RESTful APIs**: Proper API endpoints for mobile apps and integrations
+- **Real-time Features**: WebSocket support for live audio streaming
+- **Scalability**: Production-ready with proper caching, load balancing
+- **Customization**: Full control over HTML/CSS/JS vs Streamlit's limited components
+- **Mobile Support**: Responsive design vs Streamlit's desktop-focused interface
+- **Admin Interface**: Built-in content management vs manual file editing
+- **Security**: CSRF protection, XSS prevention, secure headers
+- **Performance**: Optimized queries and caching vs Streamlit's rerun model
+
+### Post-Django Enhanced Features:
+- [ ] **Mobile App Development** - Native iOS/Android apps using Django REST API
+- [ ] **Offline Mode** - Progressive Web App with service workers
+- [ ] **Real-time Collaboration** - Multiple users practicing together
+- [ ] **Advanced Analytics Dashboard** - Interactive charts with drill-down capabilities
+- [ ] **Content Management System** - Admin interface for managing texts and users
+- [ ] **API for Third-party Integrations** - LMS, educational platforms
+- [ ] **Multi-tenant Support** - Organizations can have their own instances
+- [ ] **Advanced Security** - Rate limiting, 2FA, audit logs
+- [ ] **Performance Optimization** - Redis caching, CDN integration
+- [ ] **Internationalization** - Multi-language support with Django i18n 
 
 ## Running Questions
 These questions are to be answered by research and testing before the app can be considered complete and will represent questions from the community have have been answered.
