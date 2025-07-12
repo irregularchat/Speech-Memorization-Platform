@@ -244,6 +244,24 @@
                                 </div>
                                 
                                 <div id="practice-controls" class="mt-4">
+                                    <!-- Recording Mode Toggle -->
+                                    <div class="row mb-3">
+                                        <div class="col-12">
+                                            <div class="btn-group w-100" role="group">
+                                                <button type="button" id="streaming-mode-btn" class="btn btn-outline-primary active" onclick="setRecordingMode(true)">
+                                                    🌊 Real-time Mode
+                                                </button>
+                                                <button type="button" id="traditional-mode-btn" class="btn btn-outline-primary" onclick="setRecordingMode(false)">
+                                                    🎙️ Traditional Mode
+                                                </button>
+                                            </div>
+                                            <small class="text-muted d-block mt-1">
+                                                <span id="mode-description">Real-time: Continuous listening with instant feedback</span>
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Recording Controls -->
                                     <div class="row">
                                         <div class="col-md-4">
                                             <button id="record-btn" class="btn btn-lg btn-primary w-100">
@@ -373,18 +391,30 @@
 
 {% block extra_js %}
 <script src="{% static 'js/ai_speech_recorder.js' %}"></script>
+<script src="{% static 'js/streaming_speech_recorder.js' %}"></script>
 <script src="{% static 'js/enhanced_practice.js' %}"></script>
 <script>
-console.log('Scripts loaded, checking AISpeechRecorder availability:', typeof AISpeechRecorder);
+console.log('Scripts loaded, checking availability:');
+console.log('- AISpeechRecorder:', typeof AISpeechRecorder);
+console.log('- StreamingSpeechRecorder:', typeof StreamingSpeechRecorder);
 </script>
 <script>
 // Global variables
 let currentSession = null;
 let audioRecorder = null;
+let streamingRecorder = null;
 let currentWordIndex = 0;
+let isStreamingMode = true;  // Default to streaming mode
+let lastTranscription = '';
+let streamingActive = false;
 
 // Initialize practice dashboard
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== ENHANCED PRACTICE INITIALIZATION ===');
+    console.log('window.csrftoken:', window.csrftoken ? window.csrftoken.length + ' chars' : 'not available');
+    console.log('csrftoken variable:', typeof csrftoken !== 'undefined' ? csrftoken.length + ' chars' : 'not available');
+    console.log('getCsrfToken() result:', getCsrfToken().length + ' chars');
+    
     loadRecommendations();
     initializeAudioRecorder();
 });
@@ -465,9 +495,19 @@ function startAdaptivePractice() {
 
 // Initialize Practice Session UI
 function initializePracticeSession(title, sessionData) {
+    console.log('🎯 Initializing practice session:', {
+        title: title,
+        sessionData: sessionData,
+        hasDisplayText: !!sessionData.display_text
+    });
+    
     document.getElementById('practice-display').style.display = 'block';
     document.getElementById('practice-mode-title').textContent = title;
     document.getElementById('text-display').innerHTML = sessionData.display_text;
+    
+    // Reset word index for new session
+    currentWordIndex = 0;
+    console.log(`🔢 Reset currentWordIndex to ${currentWordIndex}`);
     
     // Initialize audio recorder and request microphone permission
     if (audioRecorder) {
@@ -533,58 +573,117 @@ function displayRecommendations(recommendations) {
 
 // Audio recording functions
 function initializeAudioRecorder() {
-    console.log('Initializing audio recorder...');
+    console.log('Initializing audio recorders...');
     
-    // Check if AISpeechRecorder is available
+    // Initialize streaming recorder
+    if (typeof StreamingSpeechRecorder !== 'undefined') {
+        console.log('Initializing StreamingSpeechRecorder...');
+        try {
+            streamingRecorder = new StreamingSpeechRecorder({
+                chunkDuration: 1000,     // 1 second chunks
+                overlaps: 200,           // 200ms overlap
+                minChunkSize: 500,       // 0.5s minimum
+                
+                onStreamStart: () => {
+                    console.log('Streaming started');
+                    showFeedback('🎤 Listening... speak naturally', 'info');
+                    document.getElementById('record-btn').innerHTML = '⏹️ Stop Listening';
+                    document.getElementById('record-btn').classList.replace('btn-primary', 'btn-danger');
+                },
+                
+                onStreamStop: () => {
+                    console.log('Streaming stopped');
+                    showFeedback('Stopped listening', 'secondary');
+                    document.getElementById('record-btn').innerHTML = '🎤 Start Recording';
+                    document.getElementById('record-btn').classList.replace('btn-danger', 'btn-primary');
+                },
+                
+                onChunkReady: (chunkData) => {
+                    if (currentSession && streamingActive) {
+                        processStreamingChunk(chunkData);
+                    }
+                },
+                
+                onVolumeChange: (volume) => {
+                    // Update volume indicator if needed
+                    updateVolumeIndicator(volume);
+                },
+                
+                onSilenceDetected: () => {
+                    console.log('Silence detected - considering auto-stop');
+                    // Could auto-stop after extended silence
+                },
+                
+                onError: (error) => {
+                    console.error('Streaming recorder error:', error);
+                    showFeedback('Streaming error: ' + error, 'danger');
+                    streamingActive = false;
+                }
+            });
+            
+            console.log('StreamingSpeechRecorder initialized successfully');
+            
+        } catch (error) {
+            console.error('Error creating StreamingSpeechRecorder:', error);
+            showFeedback('Error initializing streaming recorder: ' + error, 'danger');
+        }
+    }
+    
+    // Initialize fallback recorder
     if (typeof AISpeechRecorder !== 'undefined') {
-        console.log('AISpeechRecorder found, creating instance...');
+        console.log('Initializing fallback AISpeechRecorder...');
         try {
             audioRecorder = new AISpeechRecorder({
                 onRecordingStart: () => {
-                    console.log('Recording started');
+                    console.log('Fallback recording started');
                     showFeedback('Recording started...', 'info');
                 },
                 onRecordingStop: (data) => {
-                    console.log('Recording stopped');
+                    console.log('Fallback recording stopped');
                     showFeedback('Processing audio...', 'info');
                 },
                 onError: (error) => {
-                    console.error('Audio recorder error:', error);
+                    console.error('Fallback audio recorder error:', error);
                     showFeedback('Audio error: ' + error, 'danger');
                 }
             });
             
-            // Test microphone permission immediately
-            audioRecorder.requestMicrophonePermission().then(hasPermission => {
-                if (hasPermission) {
-                    console.log('Microphone permission granted');
-                    showFeedback('Microphone ready!', 'success');
-                } else {
-                    console.error('Microphone permission denied');
-                    showFeedback('Microphone permission required for speech practice', 'warning');
-                }
-            }).catch(error => {
-                console.error('Microphone permission error:', error);
-                showFeedback('Error accessing microphone: ' + error, 'danger');
-            });
-            
         } catch (error) {
-            console.error('Error creating AISpeechRecorder:', error);
-            showFeedback('Error initializing audio recorder: ' + error, 'danger');
+            console.error('Error creating fallback AISpeechRecorder:', error);
         }
-    } else {
-        console.error('AISpeechRecorder not found');
-        showFeedback('Audio recorder not available - speech recognition disabled', 'warning');
+    }
+    
+    // Test microphone permission
+    if (streamingRecorder) {
+        streamingRecorder.requestMicrophonePermission().then(hasPermission => {
+            if (hasPermission) {
+                console.log('Microphone permission granted for streaming');
+                showFeedback('🎤 Real-time speech recognition ready!', 'success');
+            } else {
+                console.error('Microphone permission denied');
+                showFeedback('Microphone permission required for speech practice', 'warning');
+                isStreamingMode = false;
+            }
+        }).catch(error => {
+            console.error('Microphone permission error:', error);
+            showFeedback('Error accessing microphone: ' + error, 'danger');
+            isStreamingMode = false;
+        });
     }
     
     // Add record button listener
     const recordBtn = document.getElementById('record-btn');
     if (recordBtn) {
         recordBtn.addEventListener('click', function() {
-            if (this.textContent.includes('Start')) {
-                startRecording();
+            if (isStreamingMode) {
+                toggleStreamingRecording();
             } else {
-                stopRecording();
+                // Fallback to old recording method
+                if (this.textContent.includes('Start')) {
+                    startRecording();
+                } else {
+                    stopRecording();
+                }
             }
         });
     } else {
@@ -659,6 +758,8 @@ function processSpeechResult(recordingData) {
     
     console.log('Sending audio to speech recognition...');
     console.log('Using session key:', currentSession.session_key);
+    const csrfToken = getCsrfToken();
+    console.log('CSRF token for speech API:', csrfToken ? csrfToken.length + ' chars' : 'null/empty');
     showFeedback('Transcribing audio...', 'info');
     
     // First, send audio to speech recognition endpoint
@@ -666,7 +767,7 @@ function processSpeechResult(recordingData) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': getCsrfToken()
+            'X-CSRFToken': csrfToken
         },
         body: JSON.stringify({
             session_key: currentSession.session_key,
@@ -693,7 +794,7 @@ function processSpeechResult(recordingData) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCsrfToken()
+                    'X-CSRFToken': csrfToken
                 },
                 body: JSON.stringify({
                     session_key: currentSession.session_key,
@@ -937,19 +1038,315 @@ function testAudioRecorder() {
     }, 2000); // Record for 2 seconds
 }
 
+// Streaming audio functions
+function toggleStreamingRecording() {
+    if (!streamingRecorder) {
+        showFeedback('Streaming recorder not available', 'danger');
+        return;
+    }
+    
+    if (streamingActive) {
+        stopStreamingRecording();
+    } else {
+        startStreamingRecording();
+    }
+}
+
+function startStreamingRecording() {
+    if (!currentSession) {
+        showFeedback('No active practice session - please start a practice mode first', 'warning');
+        return;
+    }
+    
+    console.log('Starting streaming recording...');
+    streamingActive = true;
+    
+    streamingRecorder.startStreaming().then(success => {
+        if (success) {
+            console.log('Streaming recording started successfully');
+            // Start sending chunks immediately
+        } else {
+            console.error('Failed to start streaming recording');
+            streamingActive = false;
+            showFeedback('Failed to start streaming recording', 'danger');
+        }
+    }).catch(error => {
+        console.error('Error starting streaming:', error);
+        streamingActive = false;
+        showFeedback('Error starting streaming: ' + error, 'danger');
+    });
+}
+
+function stopStreamingRecording() {
+    console.log('Stopping streaming recording...');
+    streamingActive = false;
+    
+    if (streamingRecorder) {
+        streamingRecorder.stopStreaming();
+        
+        // Send stop signal to server
+        if (currentSession) {
+            fetch('/api/practice/stop-streaming/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    session_key: currentSession.session_key
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Streaming session stopped:', data);
+                if (data.final_state) {
+                    showFeedback(`Session complete: ${data.final_state.chunks_processed} chunks processed`, 'info');
+                }
+            })
+            .catch(error => {
+                console.error('Error stopping streaming session:', error);
+            });
+        }
+    }
+}
+
+function processStreamingChunk(chunkData) {
+    if (!currentSession || !streamingActive) {
+        console.log('Skipping chunk - no session or not active:', {
+            hasSession: !!currentSession,
+            streamingActive: streamingActive
+        });
+        return;
+    }
+    
+    console.log(`🎵 Processing streaming chunk ${chunkData.sequence}:`, {
+        duration: chunkData.duration + 'ms',
+        audioSize: chunkData.base64Data ? chunkData.base64Data.length + ' chars' : 'no data',
+        sessionKey: currentSession.session_key ? 'present' : 'missing'
+    });
+    
+    // Send chunk to streaming speech recognition
+    fetch('/api/practice/streaming-chunk/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            session_key: currentSession.session_key,
+            base64Data: chunkData.base64Data,
+            chunk_info: {
+                sequence: chunkData.sequence,
+                duration: chunkData.duration,
+                timestamp: chunkData.timestamp,
+                isRealtime: true
+            }
+        })
+    })
+    .then(response => {
+        console.log(`📡 Streaming chunk ${chunkData.sequence} response:`, response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log(`📝 Streaming chunk ${chunkData.sequence} result:`, data);
+        if (data.success && data.is_streaming) {
+            handleStreamingResponse(data);
+        } else {
+            console.error('❌ Streaming chunk processing failed:', data);
+        }
+    })
+    .catch(error => {
+        console.error('🚨 Error processing streaming chunk:', error);
+    });
+}
+
+function handleStreamingResponse(data) {
+    console.log('🎧 Handling streaming response:', {
+        transcription: data.transcription,
+        confidence: data.confidence,
+        ready_for_processing: data.ready_for_processing,
+        should_process_word: data.should_process_word,
+        lastTranscription: lastTranscription
+    });
+    
+    // Display real-time transcription feedback
+    if (data.transcription && data.transcription !== lastTranscription) {
+        lastTranscription = data.transcription;
+        
+        // Show partial transcription with confidence indicator
+        const confidenceClass = data.confidence > 0.7 ? 'success' : 
+                               data.confidence > 0.4 ? 'warning' : 'secondary';
+        
+        showFeedback(`🎤 "${data.transcription}" (${Math.round(data.confidence * 100)}%)`, confidenceClass);
+        
+        // Lower threshold for testing - if we have any meaningful transcription, try matching
+        const shouldTryMatch = data.transcription.trim().length > 0 && data.confidence > 0.3;
+        
+        console.log(`🤔 Should try word match? ${shouldTryMatch} (conf: ${data.confidence}, ready: ${data.ready_for_processing}, should: ${data.should_process_word})`);
+        
+        // If ready for word processing, check against current word
+        if (shouldTryMatch) {
+            processWordMatch(data.transcription, data.confidence);
+        }
+    }
+    
+    // Update streaming status
+    if (data.chunks_processed && data.chunks_processed % 5 === 0) {
+        console.log(`📊 Streaming status: ${data.chunks_processed} chunks, avg confidence: ${Math.round(data.avg_confidence * 100)}%`);
+    }
+}
+
+function processWordMatch(transcription, confidence) {
+    if (!currentSession) {
+        console.error('❌ No current session for word match');
+        return;
+    }
+    
+    console.log(`🔍 Processing word match: "${transcription}" (conf: ${confidence}) for word index ${currentWordIndex}`);
+    console.log(`📍 Current session key: ${currentSession.session_key}`);
+    
+    // First, let's get information about what word we're expecting
+    console.log('🎯 Requesting current word info from session...');
+    
+    // Send to enhanced speech processing for word matching
+    fetch('/api/enhanced/process-speech/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            session_key: currentSession.session_key,
+            spoken_text: transcription,
+            word_index: currentWordIndex,
+            is_streaming: true,
+            confidence: confidence
+        })
+    })
+    .then(response => {
+        console.log(`📡 Word match response status:`, response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('🎯 Word match processing result:', data);
+        
+        if (data.success && data.word_found) {
+            // Correct word found!
+            console.log(`✅ CORRECT WORD! Moving from index ${currentWordIndex} to ${data.next_word_index}`);
+            showFeedback('✅ Correct!', 'success');
+            currentWordIndex = data.next_word_index;
+            
+            if (data.display_text) {
+                console.log('📄 Updating display text');
+                updateDisplayText(data.display_text);
+                updateProgress();
+            } else {
+                console.warn('⚠️ No display_text in response');
+            }
+            
+            // Brief pause in streaming to acknowledge correct word
+            setTimeout(() => {
+                if (streamingActive) {
+                    showFeedback('🎤 Continue speaking...', 'info');
+                }
+            }, 1000);
+            
+        } else if (data.expected_word) {
+            // Show hint but continue streaming
+            console.log(`❌ Incorrect word. Expected: "${data.expected_word}", got: "${transcription}"`);
+            showFeedback(`Expected: "${data.expected_word}" | Keep trying...`, 'warning');
+        } else {
+            console.warn('⚠️ Unexpected response format:', data);
+        }
+    })
+    .catch(error => {
+        console.error('🚨 Error processing word match:', error);
+    });
+}
+
+function updateVolumeIndicator(volume) {
+    // Update a volume indicator if we add one to the UI
+    // For now, just log significant volume changes
+    if (volume > 0.1) {
+        // User is speaking
+        document.getElementById('recording-indicator').style.display = 'block';
+    } else {
+        // Silence
+        document.getElementById('recording-indicator').style.display = 'none';
+    }
+}
+
+function setRecordingMode(useStreaming) {
+    // Stop any active recording first
+    if (streamingActive) {
+        stopStreamingRecording();
+    }
+    
+    isStreamingMode = useStreaming;
+    
+    // Update UI
+    const streamingBtn = document.getElementById('streaming-mode-btn');
+    const traditionalBtn = document.getElementById('traditional-mode-btn');
+    const modeDescription = document.getElementById('mode-description');
+    const recordBtn = document.getElementById('record-btn');
+    
+    if (useStreaming) {
+        streamingBtn.classList.add('active');
+        traditionalBtn.classList.remove('active');
+        modeDescription.textContent = 'Real-time: Continuous listening with instant feedback';
+        recordBtn.innerHTML = '🎤 Start Listening';
+        
+        // Ensure streaming recorder is available
+        if (!streamingRecorder) {
+            showFeedback('⚠️ Streaming mode not available, falling back to traditional mode', 'warning');
+            setRecordingMode(false);
+            return;
+        }
+        
+        showFeedback('🌊 Real-time mode enabled - speak naturally and continuously', 'info');
+        
+    } else {
+        streamingBtn.classList.remove('active');
+        traditionalBtn.classList.add('active');
+        modeDescription.textContent = 'Traditional: Press and hold to record, release to process';
+        recordBtn.innerHTML = '🎤 Start Recording';
+        
+        showFeedback('🎙️ Traditional mode enabled - press to record, release to process', 'info');
+    }
+    
+    console.log('Recording mode set to:', useStreaming ? 'streaming' : 'traditional');
+}
+
 function getCsrfToken() {
-    // Try multiple sources for CSRF token
+    // Use the same method as the working microphone test
+    if (window.csrftoken) {
+        console.log('Using global CSRF token:', window.csrftoken.length, 'chars');
+        return window.csrftoken;
+    }
+    
+    // Fallback to DOM element if global not available
     let token = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (token && token.value) return token.value;
+    if (token && token.value) {
+        console.log('Using DOM CSRF token:', token.value.length, 'chars');
+        return token.value;
+    }
     
+    // Try meta tag
     token = document.querySelector('meta[name=csrf-token]');
-    if (token) return token.getAttribute('content');
+    if (token) {
+        const value = token.getAttribute('content');
+        console.log('Using meta CSRF token:', value.length, 'chars');
+        return value;
+    }
     
-    // Get from cookie as fallback
+    // Cookie fallback
     const cookies = document.cookie.split(';');
     for (let cookie of cookies) {
         const [name, value] = cookie.trim().split('=');
-        if (name === 'csrftoken') return value;
+        if (name === 'csrftoken') {
+            console.log('Using cookie CSRF token:', value.length, 'chars');
+            return value;
+        }
     }
     
     console.error('CSRF token not found');

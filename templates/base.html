@@ -198,7 +198,10 @@
         }
         const csrftoken = getCookie('csrftoken');
         
-        // CSRF token is available globally as 'csrftoken' variable
+        // Make CSRF token available globally in multiple ways for compatibility
+        window.csrftoken = csrftoken;
+        
+        // CSRF token is available globally as 'csrftoken' variable and 'window.csrftoken'
         // Individual fetch requests should include it in headers
     </script>
     

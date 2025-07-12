@@ -12,8 +12,14 @@ from django.utils import timezone
 from .models import Text, PracticeSession, WordProgress
 from .practice_service import AdaptivePracticeEngine
 from .ai_speech_service import SpeechToTextProcessor, IntelligentSpeechAnalyzer, AudioProcessor
+import time
+from threading import Lock
 
 logger = logging.getLogger(__name__)
+
+# Global state for streaming sessions
+streaming_sessions = {}
+session_lock = Lock()
 
 
 @login_required
@@ -425,3 +431,184 @@ def _generate_pronunciation_tips(spoken_text: str, expected_word: str,
         tips.append("Good effort! Just focus on the specific sounds that are different")
     
     return tips[:3]  # Limit to 3 tips to avoid overwhelming the user
+
+
+@login_required
+@require_http_methods(["POST"])
+def process_streaming_speech_chunk(request):
+    """Process real-time streaming speech chunks for immediate recognition"""
+    try:
+        data = json.loads(request.body)
+        session_key = data.get('session_key')
+        audio_data_b64 = data.get('base64Data')  # Base64 encoded audio chunk
+        chunk_info = data.get('chunk_info', {})
+        
+        if not session_key or not audio_data_b64:
+            return JsonResponse({
+                'success': False,
+                'error': 'Missing session key or audio data'
+            })
+        
+        # Get streaming session state
+        with session_lock:
+            if session_key not in streaming_sessions:
+                streaming_sessions[session_key] = {
+                    'chunks_processed': 0,
+                    'partial_transcriptions': [],
+                    'last_activity': time.time(),
+                    'accumulated_text': '',
+                    'confidence_buffer': []
+                }
+            
+            session_state = streaming_sessions[session_key]
+            session_state['last_activity'] = time.time()
+        
+        # Decode and process audio chunk
+        audio_data = base64.b64decode(audio_data_b64)
+        audio_processor = AudioProcessor()
+        
+        # Quick validation for real-time processing
+        if len(audio_data) < 1000:  # Too small chunk
+            return JsonResponse({
+                'success': True,
+                'is_streaming': True,
+                'chunk_too_small': True,
+                'transcription': '',
+                'confidence': 0.0
+            })
+        
+        # Process audio chunk
+        try:
+            processed_audio = audio_processor.process_webm_audio(audio_data)
+            speech_processor = SpeechToTextProcessor()
+            
+            # Use existing transcribe_audio method for real-time processing
+            transcription_result = speech_processor.transcribe_audio(
+                processed_audio, 
+                'wav'
+            )
+            
+            if not transcription_result['success']:
+                return JsonResponse({
+                    'success': True,
+                    'is_streaming': True,
+                    'transcription_failed': True,
+                    'transcription': '',
+                    'confidence': 0.0
+                })
+            
+            transcription = transcription_result.get('transcription', '').strip()
+            confidence = transcription_result.get('confidence', 0.5)
+            
+            # Update session state
+            with session_lock:
+                session_state['chunks_processed'] += 1
+                session_state['partial_transcriptions'].append({
+                    'text': transcription,
+                    'confidence': confidence,
+                    'timestamp': time.time(),
+                    'chunk_sequence': chunk_info.get('sequence', 0)
+                })
+                
+                # Keep only recent transcriptions (last 5 chunks)
+                session_state['partial_transcriptions'] = session_state['partial_transcriptions'][-5:]
+                
+                # Accumulate text for better context
+                if transcription and confidence > 0.3:
+                    session_state['accumulated_text'] += ' ' + transcription
+                    session_state['accumulated_text'] = session_state['accumulated_text'][-200:]  # Keep recent
+                
+                session_state['confidence_buffer'].append(confidence)
+                session_state['confidence_buffer'] = session_state['confidence_buffer'][-10:]  # Last 10 chunks
+            
+            # Calculate moving average confidence
+            avg_confidence = sum(session_state['confidence_buffer']) / len(session_state['confidence_buffer'])
+            
+            # Determine if we should trigger word processing
+            should_process_word = (
+                confidence > 0.6 and 
+                len(transcription.split()) <= 3 and  # Short phrases only
+                any(char.isalpha() for char in transcription)  # Contains letters
+            )
+            
+            response = {
+                'success': True,
+                'is_streaming': True,
+                'transcription': transcription,
+                'confidence': confidence,
+                'avg_confidence': avg_confidence,
+                'should_process_word': should_process_word,
+                'chunk_sequence': chunk_info.get('sequence', 0),
+                'chunks_processed': session_state['chunks_processed'],
+                'accumulated_text': session_state['accumulated_text'].strip(),
+                'processing_time': time.time() - session_state['last_activity']
+            }
+            
+            # If confidence is high enough, include word matching hint
+            if should_process_word:
+                response['suggested_word_match'] = transcription
+                response['ready_for_processing'] = True
+            
+            return JsonResponse(response)
+            
+        except Exception as audio_error:
+            logger.error(f"Audio processing error in streaming: {str(audio_error)}")
+            return JsonResponse({
+                'success': True,
+                'is_streaming': True,
+                'audio_processing_error': True,
+                'error': str(audio_error),
+                'transcription': '',
+                'confidence': 0.0
+            })
+        
+    except Exception as e:
+        logger.error(f"Streaming speech processing error: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Streaming processing failed: {str(e)}',
+            'is_streaming': True
+        })
+
+
+@login_required
+@require_http_methods(["POST"])
+def stop_streaming_session(request):
+    """Stop a streaming speech session and cleanup"""
+    try:
+        data = json.loads(request.body)
+        session_key = data.get('session_key')
+        
+        if not session_key:
+            return JsonResponse({
+                'success': False,
+                'error': 'Missing session key'
+            })
+        
+        # Get final session state
+        final_state = None
+        with session_lock:
+            if session_key in streaming_sessions:
+                final_state = streaming_sessions.pop(session_key)
+        
+        if final_state:
+            return JsonResponse({
+                'success': True,
+                'final_state': {
+                    'chunks_processed': final_state['chunks_processed'],
+                    'final_transcription': final_state['accumulated_text'].strip(),
+                    'session_duration': time.time() - final_state.get('start_time', time.time())
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': True,
+                'message': 'Session already ended or not found'
+            })
+        
+    except Exception as e:
+        logger.error(f"Stop streaming session error: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })

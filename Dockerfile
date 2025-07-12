@@ -1,12 +1,14 @@
 # Multi-stage build for Speech Memorization Platform with AI
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    NUMBA_CACHE_DIR=/tmp \
+    LIBROSA_CACHE_DIR=/tmp
 
 # Install system dependencies for AI processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -75,7 +77,7 @@ ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["web"]
 
 # Development stage
-FROM base as development
+FROM base AS development
 
 USER root
 

@@ -28,6 +28,8 @@ urlpatterns = [
     # AI Speech endpoints
     path('api/practice/pronunciation-feedback/', ai_practice_views.get_ai_pronunciation_feedback, name='get_ai_pronunciation_feedback'),
     path('api/practice/test-microphone/', ai_practice_views.test_microphone_quality, name='test_microphone_quality'),
+    path('api/practice/streaming-chunk/', ai_practice_views.process_streaming_speech_chunk, name='process_streaming_speech_chunk'),
+    path('api/practice/stop-streaming/', ai_practice_views.stop_streaming_session, name='stop_streaming_session'),
     
     # Enhanced practice API endpoints
     path('api/enhanced/start-word-reveal/', enhanced_practice_views.start_word_reveal_session, name='start_word_reveal_session'),

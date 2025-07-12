@@ -5,6 +5,11 @@ import tempfile
 import base64
 from typing import Dict, List, Tuple, Optional
 import numpy as np
+
+# Disable librosa caching to avoid Docker issues
+os.environ['NUMBA_DISABLE_JIT'] = '1'
+os.environ['LIBROSA_CACHE_DIR'] = '/tmp'
+
 import librosa
 import soundfile as sf
 from difflib import SequenceMatcher
