@@ -19,14 +19,19 @@ st.title("Speech Memorization Platform")
 st.sidebar.header("Select or Add Text")
 
 # Load pre-existing texts
-pre_texts = ["Creed 1", "Creed 2", "Speech 1", "Speech 2"]
+import os
+pre_texts_dir = "data/pre_texts/"
+pre_texts = []
+if os.path.exists(pre_texts_dir):
+    pre_texts = [f[:-4] for f in os.listdir(pre_texts_dir) if f.endswith('.txt')]
+pre_texts = pre_texts if pre_texts else ["No texts available"]
 selected_text = st.sidebar.selectbox("Choose a pre-loaded text", pre_texts)
 
 # Option to upload custom text
 uploaded_file = st.sidebar.file_uploader("Upload custom text", type="txt")
 
 # Display text (user can adjust the speed of words per minute)
-if selected_text or uploaded_file:
+if selected_text and selected_text != "No texts available" or uploaded_file:
     if uploaded_file:
         current_text = text_parser.load_text_from_file(uploaded_file)
     else:
