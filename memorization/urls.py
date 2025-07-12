@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, practice_views, ai_practice_views
+from . import views, practice_views, ai_practice_views, enhanced_practice_views
 
 urlpatterns = [
     # Text management
@@ -13,7 +13,8 @@ urlpatterns = [
     path('texts/<int:text_id>/toggle-visibility/', views.toggle_text_visibility, name='toggle_text_visibility'),
     
     # Enhanced practice
-    path('practice/<int:text_id>/enhanced/', practice_views.practice_text_enhanced, name='practice_text_enhanced'),
+    path('practice/<int:text_id>/enhanced/', enhanced_practice_views.enhanced_practice_dashboard, name='enhanced_practice_dashboard'),
+    path('practice/<int:text_id>/legacy/', practice_views.practice_text_enhanced, name='practice_text_enhanced'),
     
     # Practice AJAX endpoints
     path('api/practice/start/', practice_views.start_adaptive_session, name='start_adaptive_session'),
@@ -27,6 +28,18 @@ urlpatterns = [
     # AI Speech endpoints
     path('api/practice/pronunciation-feedback/', ai_practice_views.get_ai_pronunciation_feedback, name='get_ai_pronunciation_feedback'),
     path('api/practice/test-microphone/', ai_practice_views.test_microphone_quality, name='test_microphone_quality'),
+    
+    # Enhanced practice API endpoints
+    path('api/enhanced/start-word-reveal/', enhanced_practice_views.start_word_reveal_session, name='start_word_reveal_session'),
+    path('api/enhanced/start-delayed-recall/', enhanced_practice_views.start_delayed_recall_session, name='start_delayed_recall_session'),
+    path('api/enhanced/advance-reveal-round/', enhanced_practice_views.advance_word_reveal_round, name='advance_word_reveal_round'),
+    path('api/enhanced/transition-recall/', enhanced_practice_views.transition_to_recall_phase, name='transition_to_recall_phase'),
+    path('api/enhanced/process-speech/', enhanced_practice_views.process_enhanced_speech_input, name='process_enhanced_speech_input'),
+    path('api/enhanced/apply-hint/', enhanced_practice_views.apply_intelligent_hint, name='apply_intelligent_hint'),
+    path('api/enhanced/check-timing/', enhanced_practice_views.check_word_timing, name='check_enhanced_word_timing'),
+    path('api/enhanced/complete-session/', enhanced_practice_views.complete_enhanced_session, name='complete_enhanced_session'),
+    path('api/enhanced/analytics/<int:text_id>/', enhanced_practice_views.get_practice_analytics, name='get_practice_analytics'),
+    path('api/enhanced/recommendations/<int:text_id>/', enhanced_practice_views.get_session_recommendations, name='get_session_recommendations'),
     
     # Text management AJAX endpoints
     path('api/texts/create/', views.create_text_ajax, name='create_text_ajax'),
