@@ -1,0 +1,959 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Enhanced Practice: {{ text.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/enhanced_practice.css' %}">
+<style>
+.practice-mode-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+    transition: box-shadow 0.3s ease;
+}
+
+.practice-mode-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.practice-mode-card.recommended {
+    border-color: #007bff;
+    background-color: #f8f9ff;
+}
+
+.progress-bar-container {
+    background-color: #e9ecef;
+    border-radius: 4px;
+    height: 20px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: #28a745;
+    transition: width 0.3s ease;
+}
+
+.word-mastery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 5px;
+    margin: 15px 0;
+}
+
+.word-tile {
+    padding: 8px;
+    text-align: center;
+    border-radius: 4px;
+    font-size: 12px;
+    color: white;
+}
+
+.word-tile.mastered { background-color: #28a745; }
+.word-tile.learning { background-color: #ffc107; color: #000; }
+.word-tile.struggling { background-color: #dc3545; }
+.word-tile.new { background-color: #6c757d; }
+
+.pattern-indicator {
+    display: inline-block;
+    padding: 4px 8px;
+    margin: 2px;
+    border-radius: 12px;
+    font-size: 11px;
+    color: white;
+}
+
+.pattern-word-sequence { background-color: #dc3545; }
+.pattern-sentence-start { background-color: #fd7e14; }
+.pattern-long-words { background-color: #6f42c1; }
+.pattern-similar-words { background-color: #20c997; }
+
+.analytics-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 15px 0;
+}
+
+.stat-box {
+    text-align: center;
+    padding: 15px;
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    margin: 5px;
+}
+
+.btn-practice-mode {
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-word-reveal {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+}
+
+.btn-delayed-recall {
+    background: linear-gradient(45deg, #f093fb, #f5576c);
+    color: white;
+}
+
+.btn-adaptive-practice {
+    background: linear-gradient(45deg, #4facfe, #00f2fe);
+    color: white;
+}
+
+.btn-practice-mode:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Main Practice Area -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2>{{ text.title }}</h2>
+                    <p class="text-muted">{{ text.description|default:"" }}</p>
+                </div>
+                <div class="card-body">
+                    <!-- Practice Mode Selection -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="practice-mode-card">
+                                <h5>Progressive Word Reveal</h5>
+                                <p>Start with few visible words, gradually reveal more as you progress.</p>
+                                <button class="btn-practice-mode btn-word-reveal" onclick="startWordRevealSession()">
+                                    Start Word Reveal
+                                </button>
+                                <div class="mt-2">
+                                    <small>
+                                        <strong>Strategy:</strong>
+                                        <select id="reveal-strategy" class="form-control form-control-sm">
+                                            <option value="progressive">Progressive Reveal</option>
+                                            <option value="mastery_based">Mastery-Based Hiding</option>
+                                            <option value="difficulty_adaptive">Difficulty Adaptive</option>
+                                        </select>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="practice-mode-card">
+                                <h5>Delayed Recall</h5>
+                                <p>Study the text, wait, then test your memory without visual aids.</p>
+                                <button class="btn-practice-mode btn-delayed-recall" onclick="startDelayedRecallSession()">
+                                    Start Delayed Recall
+                                </button>
+                                <div class="mt-2">
+                                    <small>
+                                        <strong>Delay:</strong>
+                                        <select id="recall-delay" class="form-control form-control-sm">
+                                            <option value="5">5 minutes</option>
+                                            <option value="15" selected>15 minutes</option>
+                                            <option value="30">30 minutes</option>
+                                            <option value="60">1 hour</option>
+                                        </select>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="practice-mode-card">
+                                <h5>Adaptive Practice</h5>
+                                <p>AI-powered practice that adapts to your specific difficulties.</p>
+                                <button class="btn-practice-mode btn-adaptive-practice" onclick="startAdaptivePractice()">
+                                    Start Adaptive Practice
+                                </button>
+                                <div class="mt-2">
+                                    <small>AI will focus on your problem areas and adjust difficulty automatically.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Active Sessions -->
+                    {% if active_recall_sessions or active_reveal_sessions %}
+                    <div class="mt-4">
+                        <h5>Active Sessions</h5>
+                        {% for session in active_recall_sessions %}
+                        <div class="alert alert-info">
+                            <strong>Delayed Recall Session</strong> - 
+                            {% if session.is_ready_for_recall %}
+                                Ready for recall phase!
+                                <button class="btn btn-sm btn-primary ml-2" onclick="resumeDelayedRecall('{{ session.id }}')">
+                                    Start Recall
+                                </button>
+                            {% else %}
+                                Waiting phase ({{ session.delay_minutes }} min delay)
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        
+                        {% for session in active_reveal_sessions %}
+                        <div class="alert alert-warning">
+                            <strong>Word Reveal Session</strong> - Round {{ session.current_round }}
+                            <button class="btn btn-sm btn-warning ml-2" onclick="resumeWordReveal('{{ session.id }}')">
+                                Resume Session
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Practice Display Area -->
+                    <div id="practice-display" class="mt-4" style="display: none;">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between">
+                                <h5 id="practice-mode-title">Practice Session</h5>
+                                <div>
+                                    <button class="btn btn-sm btn-secondary" onclick="requestHint()">Hint</button>
+                                    <button class="btn btn-sm btn-danger" onclick="endSession()">End Session</button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="progress-container">
+                                    <div class="progress-bar-container">
+                                        <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+                                    </div>
+                                    <div class="text-center">
+                                        <small id="progress-text">0% Complete</small>
+                                    </div>
+                                </div>
+                                
+                                <div id="text-display" class="mt-4 p-4 border rounded" style="font-size: 18px; line-height: 1.8;">
+                                    <!-- Text content will be loaded here -->
+                                </div>
+                                
+                                <div id="practice-controls" class="mt-4">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <button id="record-btn" class="btn btn-lg btn-primary w-100">
+                                                🎤 Start Recording
+                                            </button>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button id="test-audio-btn" class="btn btn-lg btn-outline-primary w-100" onclick="testAudioRecorder()">
+                                                🔧 Test Audio
+                                            </button>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button id="next-word-btn" class="btn btn-lg btn-secondary w-100">
+                                                Next Word →
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Recording Status Indicators -->
+                                    <div id="recording-indicator" class="text-center mt-3" style="display: none;">
+                                        <div class="spinner-border text-danger" role="status"></div>
+                                        <p class="mt-2">Recording... Speak clearly</p>
+                                    </div>
+                                    <div id="processing-indicator" class="text-center mt-3" style="display: none;">
+                                        <div class="spinner-border text-primary" role="status"></div>
+                                        <p class="mt-2">Processing audio...</p>
+                                    </div>
+                                </div>
+                                
+                                <div id="feedback-area" class="mt-3">
+                                    <!-- Feedback messages will appear here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analytics Sidebar -->
+        <div class="col-lg-4">
+            <!-- Progress Overview -->
+            <div class="analytics-card">
+                <h5>Progress Overview</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="stat-box">
+                            <div style="font-size: 24px; font-weight: bold;">{{ word_progress_stats.mastered_words }}</div>
+                            <div>Mastered Words</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-box">
+                            <div style="font-size: 24px; font-weight: bold;">{{ word_progress_stats.problem_words }}</div>
+                            <div>Problem Words</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div>Overall Mastery: {{ word_progress_stats.average_mastery|floatformat:1 }}%</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: {{ word_progress_stats.average_mastery }}%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Problem Patterns -->
+            {% if practice_patterns %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Identified Difficulty Patterns</h6>
+                </div>
+                <div class="card-body">
+                    {% for pattern in practice_patterns %}
+                    <div class="mb-2">
+                        <span class="pattern-indicator pattern-{{ pattern.pattern_type }}">
+                            {{ pattern.get_pattern_type_display }}
+                        </span>
+                        <small class="ml-2">
+                            Words {{ pattern.start_word_index }}-{{ pattern.end_word_index }}
+                            ({{ pattern.success_rate|floatformat:0 }}% success)
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Recent Sessions -->
+            {% if recent_sessions %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Recent Sessions</h6>
+                </div>
+                <div class="card-body">
+                    {% for session in recent_sessions|slice:":5" %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <small>{{ session.session_type|title }}</small>
+                        <small>{{ session.accuracy_percentage|floatformat:1 }}%</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Recommendations -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Practice Recommendations</h6>
+                </div>
+                <div class="card-body">
+                    <div id="recommendations-container">
+                        <div class="text-center">
+                            <button class="btn btn-sm btn-outline-primary" onclick="loadRecommendations()">
+                                Get Personalized Recommendations
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal removed - using inline indicators instead -->
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ai_speech_recorder.js' %}"></script>
+<script src="{% static 'js/enhanced_practice.js' %}"></script>
+<script>
+console.log('Scripts loaded, checking AISpeechRecorder availability:', typeof AISpeechRecorder);
+</script>
+<script>
+// Global variables
+let currentSession = null;
+let audioRecorder = null;
+let currentWordIndex = 0;
+
+// Initialize practice dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecommendations();
+    initializeAudioRecorder();
+});
+
+// Start Word Reveal Session
+function startWordRevealSession() {
+    const strategy = document.getElementById('reveal-strategy').value;
+    
+    fetch('/api/enhanced/start-word-reveal/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            text_id: {{ text.id }},
+            strategy: strategy,
+            reveal_percentage: 0.1,
+            increment_percentage: 0.1,
+            auto_hide_enabled: true,
+            hide_delay_seconds: 3,
+            fade_duration_seconds: 2
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentSession = data;
+            initializePracticeSession('Word Reveal Practice', data);
+        } else {
+            console.error('Error starting session:', data.error);
+            showFeedback('Error starting session: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Network error:', error);
+        showFeedback('Network error starting session', 'danger');
+    });
+}
+
+// Start Delayed Recall Session
+function startDelayedRecallSession() {
+    const delayMinutes = parseInt(document.getElementById('recall-delay').value);
+    
+    fetch('/api/enhanced/start-delayed-recall/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            text_id: {{ text.id }},
+            delay_minutes: delayMinutes,
+            reveal_percentage: 0.3,
+            auto_hide_enabled: true,
+            auto_hide_delay: 5
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentSession = data;
+            if (data.study_phase) {
+                initializePracticeSession('Delayed Recall - Study Phase', data);
+                showStudyPhaseInstructions(delayMinutes);
+            }
+        } else {
+            alert('Error starting session: ' + data.error);
+        }
+    });
+}
+
+// Start Adaptive Practice
+function startAdaptivePractice() {
+    // Use existing adaptive practice functionality
+    window.location.href = `/practice/{{ text.id }}/`;
+}
+
+// Initialize Practice Session UI
+function initializePracticeSession(title, sessionData) {
+    document.getElementById('practice-display').style.display = 'block';
+    document.getElementById('practice-mode-title').textContent = title;
+    document.getElementById('text-display').innerHTML = sessionData.display_text;
+    
+    // Initialize audio recorder and request microphone permission
+    if (audioRecorder) {
+        audioRecorder.requestMicrophonePermission().then(hasPermission => {
+            if (!hasPermission) {
+                showFeedback('Microphone permission is required for speech practice', 'warning');
+            }
+        });
+    } else {
+        initializeAudioRecorder();
+    }
+    
+    // Start word timing checks
+    startWordTimingChecks();
+}
+
+// Show study phase instructions
+function showStudyPhaseInstructions(delayMinutes) {
+    const instructionsHtml = `
+        <div class="alert alert-info">
+            <h6>Study Phase</h6>
+            <p>Review the text carefully. You have unlimited time to study.</p>
+            <p>After ${delayMinutes} minutes, you'll be able to test your recall.</p>
+            <button class="btn btn-primary" onclick="transitionToRecallPhase()">Ready for Recall</button>
+        </div>
+    `;
+    document.getElementById('feedback-area').innerHTML = instructionsHtml;
+}
+
+// Load personalized recommendations
+function loadRecommendations() {
+    fetch(`/api/enhanced/recommendations/{{ text.id }}/`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayRecommendations(data.recommendations);
+        }
+    });
+}
+
+// Display recommendations
+function displayRecommendations(recommendations) {
+    const container = document.getElementById('recommendations-container');
+    if (recommendations.length === 0) {
+        container.innerHTML = '<p class="text-muted">No specific recommendations at this time. Keep practicing!</p>';
+        return;
+    }
+    
+    let html = '';
+    recommendations.forEach(rec => {
+        const priorityClass = rec.priority === 'high' ? 'border-primary' : 'border-secondary';
+        html += `
+            <div class="card ${priorityClass} mb-2">
+                <div class="card-body p-2">
+                    <h6 class="card-title">${rec.title}</h6>
+                    <p class="card-text small">${rec.description}</p>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+// Audio recording functions
+function initializeAudioRecorder() {
+    console.log('Initializing audio recorder...');
+    
+    // Check if AISpeechRecorder is available
+    if (typeof AISpeechRecorder !== 'undefined') {
+        console.log('AISpeechRecorder found, creating instance...');
+        try {
+            audioRecorder = new AISpeechRecorder({
+                onRecordingStart: () => {
+                    console.log('Recording started');
+                    showFeedback('Recording started...', 'info');
+                },
+                onRecordingStop: (data) => {
+                    console.log('Recording stopped');
+                    showFeedback('Processing audio...', 'info');
+                },
+                onError: (error) => {
+                    console.error('Audio recorder error:', error);
+                    showFeedback('Audio error: ' + error, 'danger');
+                }
+            });
+            
+            // Test microphone permission immediately
+            audioRecorder.requestMicrophonePermission().then(hasPermission => {
+                if (hasPermission) {
+                    console.log('Microphone permission granted');
+                    showFeedback('Microphone ready!', 'success');
+                } else {
+                    console.error('Microphone permission denied');
+                    showFeedback('Microphone permission required for speech practice', 'warning');
+                }
+            }).catch(error => {
+                console.error('Microphone permission error:', error);
+                showFeedback('Error accessing microphone: ' + error, 'danger');
+            });
+            
+        } catch (error) {
+            console.error('Error creating AISpeechRecorder:', error);
+            showFeedback('Error initializing audio recorder: ' + error, 'danger');
+        }
+    } else {
+        console.error('AISpeechRecorder not found');
+        showFeedback('Audio recorder not available - speech recognition disabled', 'warning');
+    }
+    
+    // Add record button listener
+    const recordBtn = document.getElementById('record-btn');
+    if (recordBtn) {
+        recordBtn.addEventListener('click', function() {
+            if (this.textContent.includes('Start')) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        });
+    } else {
+        console.warn('Record button not found');
+    }
+}
+
+function startRecording() {
+    const recordBtn = document.getElementById('record-btn');
+    recordBtn.textContent = '⏹️ Stop Recording';
+    recordBtn.classList.replace('btn-primary', 'btn-danger');
+    
+    // Show recording indicator
+    document.getElementById('recording-indicator').style.display = 'block';
+    
+    if (audioRecorder) {
+        audioRecorder.startRecording();
+    }
+}
+
+function stopRecording() {
+    console.log('stopRecording() called');
+    const recordBtn = document.getElementById('record-btn');
+    recordBtn.textContent = '🎤 Start Recording';
+    recordBtn.classList.replace('btn-danger', 'btn-primary');
+    
+    document.getElementById('recording-indicator').style.display = 'none';
+    document.getElementById('processing-indicator').style.display = 'block';
+    
+    if (audioRecorder) {
+        console.log('Stopping audio recorder...');
+        audioRecorder.stopRecording().then(result => {
+            console.log('Audio recording result:', result);
+            document.getElementById('processing-indicator').style.display = 'none';
+            
+            if (result && result.base64Data) {
+                console.log('Valid audio data received, processing...');
+                processSpeechResult(result);
+            } else {
+                console.error('No valid audio data received:', result);
+                showFeedback('No audio data recorded. Please try again.', 'warning');
+            }
+        }).catch(error => {
+            console.error('Error stopping recording:', error);
+            document.getElementById('processing-indicator').style.display = 'none';
+            showFeedback('Error stopping recording: ' + error, 'danger');
+        });
+    } else {
+        console.error('No audio recorder available');
+        document.getElementById('processing-indicator').style.display = 'none';
+        showFeedback('Audio recorder not available', 'danger');
+    }
+}
+
+// Process speech recognition result
+function processSpeechResult(recordingData) {
+    console.log('processSpeechResult called with:', recordingData);
+    
+    if (!currentSession) {
+        console.error('No current session available');
+        showFeedback('No active practice session', 'danger');
+        document.getElementById('processing-indicator').style.display = 'none';
+        return;
+    }
+    
+    if (!currentSession.session_key) {
+        console.error('No session key available in current session:', currentSession);
+        showFeedback('Invalid session - please restart practice', 'danger');
+        document.getElementById('processing-indicator').style.display = 'none';
+        return;
+    }
+    
+    console.log('Sending audio to speech recognition...');
+    console.log('Using session key:', currentSession.session_key);
+    showFeedback('Transcribing audio...', 'info');
+    
+    // First, send audio to speech recognition endpoint
+    fetch('/api/practice/speech/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            session_key: currentSession.session_key,
+            audio_data: recordingData.base64Data,
+            audio_format: recordingData.format
+        })
+    })
+    .then(response => {
+        console.log('Speech API response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`Speech API error: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(speechData => {
+        console.log('Speech recognition response:', speechData);
+        if (speechData.success && speechData.ai_analysis && speechData.ai_analysis.transcription) {
+            // Now process the transcribed text with enhanced features
+            const spokenText = speechData.ai_analysis.transcription;
+            console.log('Transcribed text:', spokenText);
+            showFeedback('Processing transcription...', 'info');
+            
+            return fetch('/api/enhanced/process-speech/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    session_key: currentSession.session_key,
+                    spoken_text: spokenText,
+                    word_index: currentWordIndex
+                })
+            })
+            .then(response => {
+                console.log('Enhanced processing response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`Enhanced processing error: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Enhanced processing response:', data);
+                if (data.success && data.word_found) {
+                    showFeedback('Correct!', 'success');
+                    currentWordIndex = data.next_word_index;
+                    updateDisplayText(data.display_text);
+                    updateProgress();
+                } else {
+                    showFeedback(`Expected: "${data.expected_word}" | You said: "${spokenText}"`, 'warning');
+                }
+            });
+        } else {
+            throw new Error('Speech recognition failed: ' + (speechData.error || 'No transcription received'));
+        }
+    })
+    .catch(error => {
+        console.error('Speech processing error:', error);
+        showFeedback('Error processing speech: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        // CRITICAL FIX: Always hide processing indicator
+        console.log('Hiding processing indicator');
+        document.getElementById('processing-indicator').style.display = 'none';
+    });
+}
+
+// Request hint
+function requestHint() {
+    if (!currentSession) return;
+    
+    fetch('/api/enhanced/apply-hint/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            session_key: currentSession.session_key,
+            word_index: currentWordIndex,
+            hint_type: 'auto'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateDisplayText(data.display_text);
+            showFeedback(`Hint applied: ${data.hint_type}`, 'info');
+        }
+    });
+}
+
+// Word timing checks
+function startWordTimingChecks() {
+    setInterval(() => {
+        if (!currentSession) return;
+        
+        fetch('/api/enhanced/check-timing/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                session_key: currentSession.session_key,
+                word_index: currentWordIndex
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.action === 'suggest_hint') {
+                    showFeedback('Having trouble? Try requesting a hint!', 'info');
+                } else if (data.action === 'auto_hide') {
+                    updateDisplayText(data.display_text);
+                    showFeedback('Word auto-hidden due to timing', 'warning');
+                }
+            }
+        });
+    }, 2000);
+}
+
+// Utility functions
+function updateDisplayText(html) {
+    document.getElementById('text-display').innerHTML = html;
+}
+
+function updateProgress() {
+    const totalWords = document.querySelectorAll('[data-index]').length;
+    const completedWords = document.querySelectorAll('.word-completed').length;
+    const progress = (completedWords / totalWords) * 100;
+    
+    document.getElementById('progress-bar').style.width = progress + '%';
+    document.getElementById('progress-text').textContent = `${Math.round(progress)}% Complete`;
+}
+
+function showFeedback(message, type) {
+    const alertClass = `alert-${type}`;
+    const html = `<div class="alert ${alertClass} alert-dismissible fade show">
+        ${message}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>`;
+    document.getElementById('feedback-area').innerHTML = html;
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        const alert = document.querySelector('#feedback-area .alert');
+        if (alert) alert.remove();
+    }, 3000);
+}
+
+function endSession() {
+    if (!currentSession) return;
+    
+    fetch('/api/enhanced/complete-session/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            session_key: currentSession.session_key
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSessionResults(data);
+        }
+    });
+}
+
+function showSessionResults(results) {
+    // Display comprehensive session results
+    const stats = results.statistics;
+    const analysis = results.analysis;
+    
+    let html = `
+        <div class="card">
+            <div class="card-header">
+                <h5>Session Complete!</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Performance</h6>
+                        <ul>
+                            <li>Words Completed: ${stats.completed_words}/${stats.total_words}</li>
+                            <li>Accuracy: ${Math.round(stats.accuracy)}%</li>
+                            <li>Words per Minute: ${Math.round(stats.words_per_minute)}</li>
+                            <li>Duration: ${Math.round(stats.duration_seconds / 60)} minutes</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Analysis</h6>
+                        <ul>
+                            <li>Hints Used: ${stats.hints_used}</li>
+                            <li>Problem Areas: ${analysis.problem_areas.length}</li>
+                            <li>Patterns Detected: ${analysis.patterns_detected}</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                ${analysis.recommendations.length > 0 ? `
+                <div class="mt-3">
+                    <h6>Recommendations</h6>
+                    <ul>
+                        ${analysis.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                
+                <div class="mt-3">
+                    <button class="btn btn-primary" onclick="location.reload()">Start New Session</button>
+                    <button class="btn btn-secondary" onclick="window.location.href='/texts/'">Back to Texts</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('practice-display').innerHTML = html;
+    currentSession = null;
+}
+
+// Test audio recorder function
+function testAudioRecorder() {
+    console.log('=== AUDIO RECORDER TEST ===');
+    console.log('1. Checking if AISpeechRecorder is available:', typeof AISpeechRecorder);
+    console.log('2. Current audioRecorder instance:', audioRecorder);
+    console.log('3. Current session:', currentSession);
+    
+    if (!audioRecorder) {
+        showFeedback('Audio recorder not initialized. Trying to reinitialize...', 'warning');
+        initializeAudioRecorder();
+        return;
+    }
+    
+    // Test microphone permission
+    audioRecorder.requestMicrophonePermission().then(hasPermission => {
+        console.log('4. Microphone permission:', hasPermission);
+        if (hasPermission) {
+            showFeedback('✓ Audio recorder is working! Microphone permission granted.', 'success');
+        } else {
+            showFeedback('✗ Microphone permission denied or not available.', 'danger');
+        }
+    }).catch(error => {
+        console.error('5. Error testing microphone:', error);
+        showFeedback('✗ Error testing microphone: ' + error, 'danger');
+    });
+    
+    // Test recording capability
+    console.log('6. Starting test recording...');
+    audioRecorder.startRecording();
+    
+    setTimeout(() => {
+        console.log('7. Stopping test recording...');
+        audioRecorder.stopRecording().then(result => {
+            console.log('8. Test recording result:', result);
+            if (result && result.base64Data) {
+                showFeedback('✓ Audio recording test successful! Got ' + result.base64Data.length + ' characters of audio data.', 'success');
+            } else {
+                showFeedback('✗ Audio recording test failed - no data received.', 'danger');
+            }
+        }).catch(error => {
+            console.error('9. Test recording error:', error);
+            showFeedback('✗ Audio recording test failed: ' + error, 'danger');
+        });
+    }, 2000); // Record for 2 seconds
+}
+
+function getCsrfToken() {
+    // Try multiple sources for CSRF token
+    let token = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (token && token.value) return token.value;
+    
+    token = document.querySelector('meta[name=csrf-token]');
+    if (token) return token.getAttribute('content');
+    
+    // Get from cookie as fallback
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'csrftoken') return value;
+    }
+    
+    console.error('CSRF token not found');
+    return '';
+}
+</script>
+{% endblock %}
