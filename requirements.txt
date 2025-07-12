@@ -16,4 +16,4 @@ openai
 # pydantic is used to validate the data types of the data
 pydantic
 # speech_recognition is used to capture audio input
-speech_recognition
+# speech_recognition

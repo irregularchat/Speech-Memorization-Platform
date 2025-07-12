@@ -3,7 +3,9 @@ services:
   speech-memorization-platform: # name of the service
     build: . # build the app from the Dockerfile
     ports:
-      - "${PORT}:${PORT}" # map the port from the host to the container
+      # - "${PORT}:${PORT}" # map the port from the host to the container
+      - "8000:8000" # map the port from the host to the container
+    working_dir: /app
     environment:
       - BASE_DOMAIN=${BASE_DOMAIN}
       - PORT=${PORT}

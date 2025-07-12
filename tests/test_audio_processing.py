@@ -1,6 +1,7 @@
 # ./tests/test_audio_processing.py
 import unittest
 from utils import audio_handler
+import speech_recognition
 import io
 
 class TestAudioHandler(unittest.TestCase):
