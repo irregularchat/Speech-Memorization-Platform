@@ -1,11 +1,23 @@
 # ./app.py
 # Import necessary libraries
 import streamlit as st
-from utils import text_parser, audio_handler, user_management
+from utils import text_parser, audio_handler, user_management, spaced_repetition
+import os
 
-# Global variables to hold user state
-current_text = None
-user_stats = user_management.load_user_stats()
+# Initialize spaced repetition manager and analytics
+if 'sr_manager' not in st.session_state:
+    st.session_state.sr_manager = spaced_repetition.SpacedRepetitionManager()
+if 'analytics' not in st.session_state:
+    from utils import analytics
+    st.session_state.analytics = analytics.PerformanceAnalytics()
+
+# Initialize session state variables
+if 'current_text' not in st.session_state:
+    st.session_state.current_text = None
+if 'user_stats' not in st.session_state:
+    st.session_state.user_stats = user_management.load_user_stats()
+if 'mastery_percentage' not in st.session_state:
+    st.session_state.mastery_percentage = 0
 
 # Streamlit app configuration
 st.set_page_config(page_title="Speech Memorization Platform", layout="centered")
@@ -33,11 +45,32 @@ uploaded_file = st.sidebar.file_uploader("Upload custom text", type="txt")
 # Display text (user can adjust the speed of words per minute)
 if selected_text and selected_text != "No texts available" or uploaded_file:
     if uploaded_file:
-        current_text = text_parser.load_text_from_file(uploaded_file)
+        st.session_state.current_text = text_parser.load_text_from_file(uploaded_file)
     else:
-        current_text = text_parser.load_text_from_file(f"data/pre_texts/{selected_text}.txt")
+        st.session_state.current_text = text_parser.load_text_from_file(f"data/pre_texts/{selected_text}.txt")
+    
+    current_text = st.session_state.current_text
 
     st.subheader("Text to Memorize")
+    
+    # Spaced repetition controls
+    col1, col2 = st.columns(2)
+    with col1:
+        mastery_percentage = st.slider("Mastery Level (% words hidden)", 
+                                     min_value=0, max_value=100, 
+                                     value=st.session_state.mastery_percentage,
+                                     help="Hide words based on your memorization progress")
+        st.session_state.mastery_percentage = mastery_percentage
+    
+    with col2:
+        # Display word statistics
+        word_stats = st.session_state.sr_manager.get_word_statistics(current_text)
+        st.metric("Words Mastered", f"{word_stats['mastered_words']}/{word_stats['total_words']}")
+        if word_stats['tracked_words'] > 0:
+            st.metric("Average Mastery", f"{word_stats['average_mastery']:.1f}/5")
+    
+    # Apply spaced repetition to text
+    display_text = st.session_state.sr_manager.apply_spaced_repetition(current_text, mastery_percentage)
     
     # Scrolling text display controls
     words_per_minute = st.slider("Words per Minute", min_value=50, max_value=300, value=150)
@@ -46,7 +79,7 @@ if selected_text and selected_text != "No texts available" or uploaded_file:
     auto_scroll = st.checkbox("Enable Auto-Scroll", value=False)
     
     # Calculate scroll timing
-    words = current_text.split()
+    words = display_text.split()
     total_words = len(words)
     scroll_delay = 60 / words_per_minute  # seconds per word
     
@@ -108,7 +141,7 @@ if selected_text and selected_text != "No texts available" or uploaded_file:
     else:
         # Static text display
         with text_container:
-            st.markdown(f'<div style="font-size: 18px; line-height: 1.6; padding: 20px; background-color: #f0f0f0; border-radius: 10px;">{current_text}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="font-size: 18px; line-height: 1.6; padding: 20px; background-color: #f0f0f0; border-radius: 10px;">{display_text}</div>', unsafe_allow_html=True)
     
     st.text(f"Text contains {total_words} words - estimated time: {(total_words * scroll_delay / 60):.1f} minutes at {words_per_minute} WPM")
 
@@ -158,9 +191,24 @@ if st.button("📝 Record and Transcribe"):
         # Compare with original text
         comparison_results = text_parser.compare_text(transcribed_text, current_text)
         st.write("Comparison Results:")
-        st.write(f"Accuracy: {((comparison_results['total_words'] - comparison_results['errors']) / comparison_results['total_words'] * 100):.1f}%")
+        accuracy = ((comparison_results['total_words'] - comparison_results['errors']) / comparison_results['total_words'] * 100)
+        st.write(f"Accuracy: {accuracy:.1f}%")
         st.write(f"Total Words: {comparison_results['total_words']}")
         st.write(f"Errors: {comparison_results['errors']}")
+        
+        # Update spaced repetition data for each word
+        words_spoken = transcribed_text.split()
+        original_words = current_text.split()
+        
+        # Update word performance in spaced repetition system
+        for i, original_word in enumerate(original_words):
+            if i < len(words_spoken):
+                spoken_word = words_spoken[i]
+                # Clean words for comparison
+                clean_original = text_parser.clean_word(original_word)
+                clean_spoken = text_parser.clean_word(spoken_word)
+                correct = clean_original.lower() == clean_spoken.lower()
+                st.session_state.sr_manager.update_word_performance(clean_original, correct)
         
         if comparison_results['differences']:
             st.write("Word Differences:")
@@ -169,6 +217,19 @@ if st.button("📝 Record and Transcribe"):
         
         # Update user stats
         user_management.update_stats(comparison_results)
+        st.session_state.user_stats = user_management.load_user_stats()
+        
+        # Log session for analytics
+        session_data = {
+            'text_name': selected_text if selected_text != "No texts available" else "Custom Text",
+            'words_practiced': comparison_results['total_words'],
+            'accuracy': accuracy,
+            'errors': comparison_results['errors'],
+            'duration_minutes': recording_duration / 60,  # Convert seconds to minutes
+            'words_per_minute': words_per_minute,
+            'mastery_level': mastery_percentage
+        }
+        st.session_state.analytics.log_session(session_data)
     else:
         st.warning("Please select a text to memorize first!")
 
@@ -194,7 +255,65 @@ if audio_file:
         st.write(f"Total Words: {comparison_results['total_words']}")
         st.write(f"Errors: {comparison_results['errors']}")
 
-# Display user's statistics
+# Performance Analytics Sidebar
+st.sidebar.subheader("📊 Performance Analytics")
+
+# Get analytics data
+analytics_data = st.session_state.analytics.get_detailed_analytics()
+overview = analytics_data['overview']
+recent_30 = analytics_data['recent_performance']['last_30_days']
+
+# Overview metrics
+st.sidebar.metric("Current Streak", f"{overview['current_streak']} days")
+st.sidebar.metric("Total Sessions", overview['total_sessions'])
+st.sidebar.metric("Practice Time", f"{overview['total_practice_time']:.1f} min")
+
+if recent_30:
+    st.sidebar.metric("30-Day Accuracy", f"{recent_30['average_accuracy']:.1f}%")
+    
+    # Show improvement trend
+    trend = recent_30['improvement_trend']
+    trend_emoji = "📈" if trend > 0 else "📉" if trend < 0 else "➡️"
+    st.sidebar.write(f"{trend_emoji} Trend: {trend:+.1f}%")
+
+# Best session info
+if overview['best_session']['accuracy'] > 0:
+    st.sidebar.write("🏆 Best Session:")
+    st.sidebar.write(f"  {overview['best_session']['accuracy']:.1f}% accuracy")
+
+# Show detailed analytics button
+if st.sidebar.button("📈 View Detailed Analytics"):
+    st.session_state.show_analytics = True
+
+# Detailed analytics display
+if st.session_state.get('show_analytics', False):
+    st.subheader("📊 Detailed Performance Analytics")
+    
+    if recent_30:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("30-Day Sessions", recent_30['total_sessions'])
+        with col2:
+            st.metric("Words Practiced", recent_30['total_words_practiced'])
+        with col3:
+            st.metric("Avg Accuracy", f"{recent_30['average_accuracy']:.1f}%")
+        with col4:
+            st.metric("Daily Consistency", f"{recent_30['daily_consistency']}/30 days")
+        
+        # Text performance breakdown
+        if recent_30['text_performance']:
+            st.write("**Text Performance (Last 30 Days):**")
+            for text_name, perf in recent_30['text_performance'].items():
+                st.write(f"• {text_name}: {perf['avg_accuracy']:.1f}% avg ({perf['sessions']} sessions)")
+        
+        # Accuracy trend chart
+        if analytics_data['trends']['accuracy_trend']:
+            st.line_chart(analytics_data['trends']['accuracy_trend'])
+    
+    if st.button("❌ Close Analytics"):
+        st.session_state.show_analytics = False
+
+# Basic user stats (keep existing)
 st.sidebar.subheader("User Stats")
-st.sidebar.write(f"Total Words Memorized: {user_stats['total_words']}")
-st.sidebar.write(f"Total Errors: {user_stats['errors']}")
+st.sidebar.write(f"Total Words Memorized: {st.session_state.user_stats['total_words']}")
+st.sidebar.write(f"Total Errors: {st.session_state.user_stats['errors']}")
