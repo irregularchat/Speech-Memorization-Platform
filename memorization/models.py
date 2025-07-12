@@ -194,3 +194,8 @@ class UserTextProgress(models.Model):
         
     def __str__(self):
         return f"{self.user.username} - {self.text.title} ({self.overall_mastery_percentage:.1f}%)"
+    
+    @property
+    def total_practice_time_minutes(self):
+        """Get total practice time in minutes"""
+        return self.total_practice_time / 60

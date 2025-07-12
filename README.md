@@ -21,14 +21,16 @@ Join the Matrix Room to discuss the project: [Matrix Room](https://matrix.to/#/%
 ## Features
 
 ### ✅ **Currently Implemented**
-- **Text Selection**: Choose from pre-loaded texts or upload your own custom text files
-- **Spaced Repetition**: Anki-style algorithm that gradually hides mastered words (0-100% configurable)
-- **Live Recording**: Real-time microphone capture with configurable duration (3-30 seconds)
-- **Apple Music-style Display**: Scrolling text with word-by-word highlighting and progress tracking
-- **Performance Analytics**: Comprehensive tracking with accuracy trends, streaks, and improvement metrics
-- **Smart Comparison**: Advanced text comparison with punctuation handling and detailed error reporting
-- **Session Management**: Persistent progress tracking with detailed session history
-- **Error Handling**: Robust error management with user-friendly guidance
+- **Django Architecture**: Professional web framework with proper MVC structure
+- **User Authentication**: Login/logout system with user management
+- **Text Management**: Database-backed text storage with metadata and tagging
+- **Spaced Repetition**: SM-2 algorithm with word-level progress tracking
+- **Modern UI**: Bootstrap 5 responsive interface with real-time updates
+- **Practice Interface**: Interactive practice page with mastery controls
+- **Performance Analytics**: Comprehensive progress tracking with charts and trends
+- **Database Models**: Full ORM with proper relationships and constraints
+- **Admin Interface**: Django admin for content management
+- **AJAX Endpoints**: Real-time API for dynamic interactions
 
 ### 🚧 **Planned Features**
 - **Section-wise Practice**: Practice specific paragraphs or sentences
@@ -70,18 +72,19 @@ Join the Matrix Room to discuss the project: [Matrix Room](https://matrix.to/#/%
 3. **Run the application**
 
    ```bash
-   streamlit run app.py
+   python manage.py runserver
    ```
    
-   The app will open in your browser at `http://localhost:8501`
+   The app will open in your browser at `http://localhost:8000`
 
 4. **Allow microphone access** when prompted by your browser
 
 ### Quick Start
-1. Select a pre-loaded text from the sidebar (military_creed or long_speech)
-2. Adjust the "Mastery Level" slider to control word difficulty
-3. Click "📝 Record and Transcribe" to practice
-4. View your performance analytics in the sidebar
+1. **Login**: Use `admin` / `admin123` for demo access
+2. **Select a text**: Choose from available texts or upload your own
+3. **Adjust settings**: Use the mastery level slider to control word difficulty
+4. **Practice**: Click "📝 Record and Transcribe" to start practicing
+5. **Track progress**: View detailed analytics and performance trends
 
 
 ## Usage

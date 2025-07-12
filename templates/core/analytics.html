@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics - Speech Memorization Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1><i class="fas fa-chart-line"></i> Performance Analytics</h1>
+        <p class="lead">Track your memorization progress and improvement over time.</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Overall Stats -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ user_analytics.total_sessions }}</h4>
+                        <p>Total Sessions</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-play fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ user_analytics.average_accuracy|floatformat:1 }}%</h4>
+                        <p>Average Accuracy</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-bullseye fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ user_analytics.current_streak }}</h4>
+                        <p>Day Streak</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-fire fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ user_analytics.total_practice_time_minutes|floatformat:0 }}</h4>
+                        <p>Minutes Practiced</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Accuracy Trend (Last 30 Sessions)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="accuracyChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-trophy"></i> Recent Achievements</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <p class="text-muted">Achievements system coming soon!</p>
+                    <i class="fas fa-medal fa-3x text-warning"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Text Progress -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-book"></i> Text Progress</h5>
+            </div>
+            <div class="card-body">
+                {% if text_progresses %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Text</th>
+                                    <th>Mastery</th>
+                                    <th>Sessions</th>
+                                    <th>Best Score</th>
+                                    <th>Last Practiced</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for progress in text_progresses %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'practice_text' progress.text.id %}">{{ progress.text.title }}</a>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="width: 100px;">
+                                            <div class="progress-bar" style="width: {{ progress.overall_mastery_percentage }}%"></div>
+                                        </div>
+                                        <small>{{ progress.overall_mastery_percentage|floatformat:1 }}%</small>
+                                    </td>
+                                    <td>{{ progress.total_sessions }}</td>
+                                    <td>{{ progress.best_accuracy|floatformat:1 }}%</td>
+                                    <td>{{ progress.last_practiced|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                        <p>No practice data yet. <a href="{% url 'home' %}">Start practicing</a> to see your analytics!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Sessions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history"></i> Recent Sessions</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Text</th>
+                                    <th>Accuracy</th>
+                                    <th>Words</th>
+                                    <th>Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in recent_sessions %}
+                                <tr>
+                                    <td>{{ session.started_at|date:"M d, H:i" }}</td>
+                                    <td>{{ session.text.title|truncatechars:30 }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if session.accuracy_percentage >= 90 %}success{% elif session.accuracy_percentage >= 70 %}warning{% else %}danger{% endif %}">
+                                            {{ session.accuracy_percentage|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    <td>{{ session.words_practiced }}</td>
+                                    <td>{{ session.duration_seconds }}s</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No sessions yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Accuracy Trend Chart
+const ctx = document.getElementById('accuracyChart').getContext('2d');
+const accuracyData = {{ accuracy_trend|safe }};
+const sessionDates = {{ session_dates|safe }};
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: sessionDates,
+        datasets: [{
+            label: 'Accuracy %',
+            data: accuracyData,
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                    callback: function(value) {
+                        return value + '%';
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

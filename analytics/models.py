@@ -37,6 +37,11 @@ class UserAnalytics(models.Model):
         if self.total_words_practiced == 0:
             return 0.0
         return (self.total_words_correct / self.total_words_practiced) * 100
+    
+    @property
+    def total_practice_time_minutes(self):
+        """Get total practice time in minutes"""
+        return self.total_practice_time / 60
 
 
 class DailyStats(models.Model):

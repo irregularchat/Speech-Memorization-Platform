@@ -1,0 +1,486 @@
+{% extends 'base.html' %}
+
+{% block title %}Practice: {{ text.title }} - Speech Memorization Platform{% endblock %}
+
+{% block extra_css %}
+<!-- Chart.js for analytics visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Main Practice Area -->
+    <div class="col-lg-8">
+        <!-- Text Header -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2><i class="fas fa-book-open"></i> {{ text.title }}</h2>
+                    <div>
+                        <span class="badge bg-{{ text.difficulty }} fs-6">{{ text.get_difficulty_display }}</span>
+                        <span class="badge bg-secondary fs-6">{{ text.word_count }} words</span>
+                    </div>
+                </div>
+                {% if text.description %}
+                    <p class="text-muted mb-0">{{ text.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Practice Controls -->
+        <div class="practice-controls">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="masterySlider" class="form-label">
+                        <i class="fas fa-brain"></i> Mastery Level: <span id="masteryValue">{{ mastery_level }}%</span>
+                    </label>
+                    <input type="range" class="form-range" id="masterySlider" min="0" max="100" 
+                           value="{{ mastery_level }}" oninput="updateMasteryLevel()">
+                    <small class="text-muted">Hide words based on your memorization progress</small>
+                </div>
+                <div class="col-md-4">
+                    <label for="wpmSlider" class="form-label">
+                        <i class="fas fa-tachometer-alt"></i> Speed: <span id="wpmValue">{{ user_progress.preferred_words_per_minute|default:150 }}</span> WPM
+                    </label>
+                    <input type="range" class="form-range" id="wpmSlider" min="50" max="300" 
+                           value="{{ user_progress.preferred_words_per_minute|default:150 }}" oninput="updateWPM()">
+                </div>
+                <div class="col-md-4">
+                    <label for="durationSlider" class="form-label">
+                        <i class="fas fa-clock"></i> Duration: <span id="durationValue">10</span> seconds
+                    </label>
+                    <input type="range" class="form-range" id="durationSlider" min="3" max="30" 
+                           value="10" oninput="updateDuration()">
+                </div>
+            </div>
+
+            <!-- Recording Controls -->
+            <div class="text-center mb-3">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-record btn-lg" id="recordBtn" onclick="startRecording()">
+                        <i class="fas fa-microphone"></i> Start Recording
+                    </button>
+                    <button type="button" class="btn btn-warning btn-lg" id="pauseBtn" onclick="pauseRecording()" disabled>
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <button type="button" class="btn btn-info btn-lg" id="resumeBtn" onclick="resumeRecording()" disabled>
+                        <i class="fas fa-play"></i> Resume
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-lg" id="restartBtn" onclick="restartRecording()">
+                        <i class="fas fa-redo"></i> Restart
+                    </button>
+                </div>
+                
+                <div class="recording-indicator mt-2" id="recordingIndicator">
+                    <i class="fas fa-circle"></i> Recording in progress...
+                </div>
+            </div>
+
+            <!-- Auto-scroll Controls -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="autoScrollToggle" onchange="toggleAutoScroll()">
+                        <label class="form-check-label" for="autoScrollToggle">
+                            <i class="fas fa-scroll"></i> Enable Auto-Scroll
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6" id="scrollControls" style="display: none;">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="startScroll()">
+                            <i class="fas fa-play"></i> Start
+                        </button>
+                        <button type="button" class="btn btn-outline-warning" onclick="pauseScroll()">
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="resetScroll()">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Text Display -->
+        <div class="text-display" id="textDisplay">
+            {{ display_text|linebreaks }}
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span><i class="fas fa-chart-line"></i> Progress</span>
+                    <span id="progressText">0 / {{ text.word_count }} words</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: 0%" id="progressBar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Area -->
+        <div id="resultsArea" style="display: none;">
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h4><i class="fas fa-chart-bar"></i> Session Results</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 id="accuracyResult" class="text-success">-</h3>
+                            <small>Accuracy</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 id="wordsResult">-</h3>
+                            <small>Words Practiced</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 id="errorsResult" class="text-danger">-</h3>
+                            <small>Errors</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 id="timeResult">-</h3>
+                            <small>Duration</small>
+                        </div>
+                    </div>
+                    <div id="errorDetails" class="mt-3" style="display: none;">
+                        <h6>Word Differences:</h6>
+                        <div id="errorList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Word Statistics -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5><i class="fas fa-brain"></i> Word Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="text-success">{{ text_stats.mastered_words }}</h4>
+                        <small>Mastered</small>
+                    </div>
+                    <div class="col-6">
+                        <h4>{{ text_stats.total_words }}</h4>
+                        <small>Total Words</small>
+                    </div>
+                </div>
+                {% if text_stats.tracked_words > 0 %}
+                    <div class="row text-center mt-2">
+                        <div class="col-6">
+                            <h4 class="text-info">{{ text_stats.average_mastery|floatformat:1 }}</h4>
+                            <small>Avg Mastery</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-warning">{{ text_stats.words_due_review }}</h4>
+                            <small>Due Review</small>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- User Progress -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-chart"></i> Your Progress</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Overall Mastery</span>
+                        <span>{{ user_progress.overall_mastery_percentage|floatformat:1 }}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: {{ user_progress.overall_mastery_percentage }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <strong>{{ user_progress.total_sessions }}</strong><br>
+                        <small>Sessions</small>
+                    </div>
+                    <div class="col-6">
+                        <strong>{{ user_progress.best_accuracy|floatformat:1 }}%</strong><br>
+                        <small>Best Score</small>
+                    </div>
+                </div>
+                
+                <div class="row text-center mt-2">
+                    <div class="col-6">
+                        <strong>{{ user_progress.total_practice_time_minutes|floatformat:0 }}</strong><br>
+                        <small>Minutes</small>
+                    </div>
+                    <div class="col-6">
+                        <strong>{{ user_progress.current_streak }}</strong><br>
+                        <small>Day Streak</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global variables
+let currentSession = null;
+let isRecording = false;
+let recordingStartTime = null;
+let autoScrollActive = false;
+let scrollPosition = 0;
+let scrollTimer = null;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateDisplayText();
+});
+
+// Mastery level control
+function updateMasteryLevel() {
+    const masteryLevel = document.getElementById('masterySlider').value;
+    document.getElementById('masteryValue').textContent = masteryLevel + '%';
+    
+    // Update display text via AJAX
+    fetch('{% url "update_mastery_level" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            'mastery_level': parseInt(masteryLevel),
+            'text_id': {{ text.id }}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('textDisplay').innerHTML = data.display_text.replace(/\n/g, '<br>');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// WPM control
+function updateWPM() {
+    const wpm = document.getElementById('wpmSlider').value;
+    document.getElementById('wpmValue').textContent = wpm;
+}
+
+// Duration control
+function updateDuration() {
+    const duration = document.getElementById('durationSlider').value;
+    document.getElementById('durationValue').textContent = duration;
+}
+
+// Recording functions
+function startRecording() {
+    if (!currentSession) {
+        // Start new session
+        fetch('{% url "start_practice_session" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                'text_id': {{ text.id }},
+                'session_type': 'full_text'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentSession = data.session_id;
+                startActualRecording();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    } else {
+        startActualRecording();
+    }
+}
+
+function startActualRecording() {
+    isRecording = true;
+    recordingStartTime = new Date();
+    
+    // Update UI
+    document.getElementById('recordBtn').disabled = true;
+    document.getElementById('pauseBtn').disabled = false;
+    document.getElementById('recordingIndicator').style.display = 'block';
+    
+    // Simulate recording for demo (real implementation would use Web Audio API)
+    const duration = parseInt(document.getElementById('durationSlider').value) * 1000;
+    
+    setTimeout(() => {
+        if (isRecording) {
+            stopRecording();
+        }
+    }, duration);
+}
+
+function pauseRecording() {
+    isRecording = false;
+    document.getElementById('pauseBtn').disabled = true;
+    document.getElementById('resumeBtn').disabled = false;
+    document.getElementById('recordingIndicator').style.display = 'none';
+}
+
+function resumeRecording() {
+    isRecording = true;
+    document.getElementById('pauseBtn').disabled = false;
+    document.getElementById('resumeBtn').disabled = true;
+    document.getElementById('recordingIndicator').style.display = 'block';
+}
+
+function restartRecording() {
+    stopRecording();
+    resetUI();
+}
+
+function stopRecording() {
+    isRecording = false;
+    
+    // Update UI
+    document.getElementById('recordBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled = true;
+    document.getElementById('resumeBtn').disabled = true;
+    document.getElementById('recordingIndicator').style.display = 'none';
+    
+    // Simulate transcription result (real implementation would process actual audio)
+    const simulatedTranscription = "This is a simulated transcription for demo purposes.";
+    processRecordingResult(simulatedTranscription);
+}
+
+function processRecordingResult(transcription) {
+    if (!currentSession) return;
+    
+    const duration = recordingStartTime ? (new Date() - recordingStartTime) / 1000 : 10;
+    
+    fetch('{% url "complete_practice_session" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            'session_id': currentSession,
+            'transcribed_text': transcription,
+            'words_per_minute': parseInt(document.getElementById('wpmSlider').value),
+            'mastery_level_used': parseInt(document.getElementById('masterySlider').value),
+            'duration_seconds': Math.round(duration)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayResults(data);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function displayResults(results) {
+    document.getElementById('accuracyResult').textContent = results.accuracy.toFixed(1) + '%';
+    document.getElementById('wordsResult').textContent = results.words_practiced;
+    document.getElementById('errorsResult').textContent = results.errors;
+    document.getElementById('timeResult').textContent = (recordingStartTime ? (new Date() - recordingStartTime) / 1000 : 10).toFixed(1) + 's';
+    
+    // Show error details if any
+    if (results.differences && results.differences.length > 0) {
+        const errorList = document.getElementById('errorList');
+        errorList.innerHTML = '';
+        results.differences.forEach(diff => {
+            const errorItem = document.createElement('div');
+            errorItem.className = 'small mb-1';
+            errorItem.innerHTML = `Expected: <strong>${diff[0]}</strong> → You said: <strong>${diff[1]}</strong>`;
+            errorList.appendChild(errorItem);
+        });
+        document.getElementById('errorDetails').style.display = 'block';
+    }
+    
+    document.getElementById('resultsArea').style.display = 'block';
+    currentSession = null;
+}
+
+// Auto-scroll functions
+function toggleAutoScroll() {
+    const isEnabled = document.getElementById('autoScrollToggle').checked;
+    document.getElementById('scrollControls').style.display = isEnabled ? 'block' : 'none';
+    
+    if (!isEnabled && autoScrollActive) {
+        pauseScroll();
+    }
+}
+
+function startScroll() {
+    autoScrollActive = true;
+    scrollPosition = 0;
+    highlightCurrentWord();
+    
+    const wpm = parseInt(document.getElementById('wpmSlider').value);
+    const interval = 60000 / wpm; // milliseconds per word
+    
+    scrollTimer = setInterval(() => {
+        if (autoScrollActive) {
+            scrollPosition++;
+            highlightCurrentWord();
+        }
+    }, interval);
+}
+
+function pauseScroll() {
+    autoScrollActive = false;
+    if (scrollTimer) {
+        clearInterval(scrollTimer);
+        scrollTimer = null;
+    }
+}
+
+function resetScroll() {
+    pauseScroll();
+    scrollPosition = 0;
+    updateDisplayText();
+}
+
+function highlightCurrentWord() {
+    // This would implement word-by-word highlighting
+    // For now, just update progress
+    const totalWords = {{ text.word_count }};
+    const progress = Math.min((scrollPosition / totalWords) * 100, 100);
+    
+    document.getElementById('progressBar').style.width = progress + '%';
+    document.getElementById('progressText').textContent = `${Math.min(scrollPosition, totalWords)} / ${totalWords} words`;
+    
+    if (scrollPosition >= totalWords) {
+        pauseScroll();
+        alert('🎉 Text completed!');
+    }
+}
+
+function updateDisplayText() {
+    // Reset any highlighting
+    const textDisplay = document.getElementById('textDisplay');
+    // This would update the display based on current scroll position
+}
+
+function resetUI() {
+    document.getElementById('resultsArea').style.display = 'none';
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('progressText').textContent = `0 / {{ text.word_count }} words`;
+    currentSession = null;
+    recordingStartTime = null;
+}
+</script>
+{% endblock %}
