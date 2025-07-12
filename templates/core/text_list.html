@@ -78,11 +78,8 @@
                                     <div class="card-footer">
                                         <div class="d-flex justify-content-between">
                                             <div class="btn-group btn-group-sm" role="group">
-                                                <a href="{% url 'practice_text' text.id %}" class="btn btn-primary">
-                                                    <i class="fas fa-play"></i> Practice
-                                                </a>
-                                                <a href="{% url 'practice_text_enhanced' text.id %}" class="btn btn-success">
-                                                    <i class="fas fa-brain"></i> Enhanced
+                                                <a href="{% url 'practice_text' text.id %}" class="btn btn-success">
+                                                    <i class="fas fa-brain"></i> Practice
                                                 </a>
                                             </div>
                                             <div>
@@ -170,7 +167,7 @@
                                                 <a href="{% url 'practice_text' text.id %}" class="btn btn-success">
                                                     <i class="fas fa-play"></i> Practice
                                                 </a>
-                                                <a href="{% url 'practice_text_enhanced' text.id %}" class="btn btn-outline-success">
+                                                <a href="{% url 'enhanced_practice_dashboard' text.id %}" class="btn btn-outline-success">
                                                     <i class="fas fa-brain"></i> Enhanced
                                                 </a>
                                             </div>

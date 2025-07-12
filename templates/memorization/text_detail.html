@@ -25,7 +25,7 @@
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="{% url 'practice_text_enhanced' text.id %}">
+                        <a class="dropdown-item" href="{% url 'enhanced_practice_dashboard' text.id %}">
                             <i class="fas fa-brain text-primary"></i> Enhanced Practice
                         </a>
                     </li>
@@ -176,7 +176,7 @@
                             <a href="{% url 'practice_text' text.id %}" class="btn btn-success">
                                 <i class="fas fa-play"></i> Standard Practice
                             </a>
-                            <a href="{% url 'practice_text_enhanced' text.id %}" class="btn btn-primary">
+                            <a href="{% url 'enhanced_practice_dashboard' text.id %}" class="btn btn-primary">
                                 <i class="fas fa-brain"></i> Enhanced Practice
                             </a>
                         </div>
