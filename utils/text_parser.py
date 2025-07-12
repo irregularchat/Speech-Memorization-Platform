@@ -16,15 +16,33 @@ def format_text(text, title=None, time_limit=None, description=None, tags=None):
         'tags': tags
     }
 
+def clean_word(word):
+    """Clean word by removing punctuation and normalizing."""
+    import re
+    return re.sub(r'[^\w]', '', word).lower()
+
 def compare_text(transcribed_text, original_text):
     """Compare transcribed text with the original text and highlight differences."""
     differences = []
-    for original_word, transcribed_word in zip(original_text.split(), transcribed_text.split()):
-        if original_word != transcribed_word:
+    original_words = original_text.split()
+    transcribed_words = transcribed_text.split()
+    
+    # Compare word by word, accounting for different lengths
+    max_length = max(len(original_words), len(transcribed_words))
+    
+    for i in range(max_length):
+        original_word = original_words[i] if i < len(original_words) else ""
+        transcribed_word = transcribed_words[i] if i < len(transcribed_words) else ""
+        
+        # Clean words for comparison
+        clean_original = clean_word(original_word)
+        clean_transcribed = clean_word(transcribed_word)
+        
+        if clean_original != clean_transcribed:
             differences.append((original_word, transcribed_word))
     
     return {
-        'total_words': len(original_text.split()),
+        'total_words': len(original_words),
         'errors': len(differences),
         'differences': differences
     }
