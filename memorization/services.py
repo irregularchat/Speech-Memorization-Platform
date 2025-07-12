@@ -40,9 +40,9 @@ class SpacedRepetitionService:
             'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can'
         }
     
-    def update_word_performance(self, text: Text, word: str, word_position: int, correct: bool) -> WordProgress:
+    def update_word_performance(self, text: Text, word: str, word_index: int, correct: bool) -> WordProgress:
         """
-        Update performance data for a specific word using Anki SM-2 algorithm.
+        Update performance data for a specific word using enhanced mastery tracking.
         """
         word_lower = word.lower().strip()
         
@@ -54,63 +54,29 @@ class SpacedRepetitionService:
         word_progress, created = WordProgress.objects.get_or_create(
             user=self.user,
             text=text,
-            word=word_lower,
-            word_position=word_position,
+            word_index=word_index,
             defaults={
+                'word_text': word_lower,
                 'next_review': timezone.now(),
-                'easiness_factor': 2.5,
+                'ease_factor': 2.5,
                 'repetition': 0,
                 'interval': 1,
             }
         )
         
-        # Update attempts
-        word_progress.total_attempts += 1
+        # Update attempts using the enhanced model method
+        response_time = 2.0  # Default response time, could be tracked separately
+        word_progress.update_mastery(correct, response_time)
         
-        if correct:
-            word_progress.correct_attempts += 1
-            word_progress.repetition += 1
-            
-            # SM-2 algorithm implementation
-            if word_progress.repetition == 1:
-                word_progress.interval = 1
-            elif word_progress.repetition == 2:
-                word_progress.interval = 6
-            else:
-                word_progress.interval = int(word_progress.interval * word_progress.easiness_factor)
-            
-            # Update easiness factor
-            accuracy = word_progress.accuracy / 100  # Convert to 0-1 scale
-            quality = min(5, max(0, int(accuracy * 5)))  # 0-5 scale
-            
-            ef = word_progress.easiness_factor
-            ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
-            word_progress.easiness_factor = max(1.3, ef)
-            
-            # Update mastery level
-            if accuracy >= 0.9 and word_progress.repetition >= 3:
-                word_progress.mastery_level = min(5, word_progress.mastery_level + 1)
-        else:
-            # Reset on failure
-            word_progress.repetition = 0
-            word_progress.interval = 1
-            word_progress.easiness_factor = max(1.3, word_progress.easiness_factor - 0.2)
-            word_progress.mastery_level = max(0, word_progress.mastery_level - 1)
-        
-        # Calculate next review date
-        next_review = timezone.now() + timedelta(days=word_progress.interval)
-        word_progress.next_review = next_review
-        
-        word_progress.save()
         return word_progress
     
-    def get_mastered_words(self, text: Text, mastery_threshold: int = 3) -> List[str]:
+    def get_mastered_words(self, text: Text, mastery_threshold: float = 0.8) -> List[str]:
         """Get list of words that have reached mastery threshold."""
         mastered_words = WordProgress.objects.filter(
             user=self.user,
             text=text,
             mastery_level__gte=mastery_threshold
-        ).values_list('word', flat=True)
+        ).values_list('word_text', flat=True)
         
         return list(mastered_words)
     
@@ -118,7 +84,7 @@ class SpacedRepetitionService:
         """Get words that are due for review."""
         queryset = WordProgress.objects.filter(
             user=self.user,
-            next_review__lte=timezone.now()
+            needs_review=True
         )
         
         if text:
@@ -164,24 +130,24 @@ class SpacedRepetitionService:
         stats = {
             'total_words': len(set(words)),  # Unique words only
             'tracked_words': word_progresses.count(),
-            'mastered_words': word_progresses.filter(mastery_level__gte=3).count(),
-            'words_due_review': word_progresses.filter(next_review__lte=timezone.now()).count(),
+            'mastered_words': word_progresses.filter(mastery_level__gte=0.8).count(),
+            'words_due_review': word_progresses.filter(needs_review=True).count(),
             'average_mastery': 0,
             'word_details': []
         }
         
         if word_progresses.exists():
-            # Calculate average mastery
+            # Calculate average mastery (convert to percentage)
             total_mastery = sum(wp.mastery_level for wp in word_progresses)
-            stats['average_mastery'] = total_mastery / word_progresses.count()
+            stats['average_mastery'] = (total_mastery / word_progresses.count()) * 100
             
             # Get word details
             for wp in word_progresses:
                 stats['word_details'].append({
-                    'word': wp.word,
+                    'word': wp.word_text,
                     'mastery_level': wp.mastery_level,
                     'accuracy': wp.accuracy,
-                    'total_attempts': wp.total_attempts,
+                    'times_practiced': wp.times_practiced,
                     'next_review': wp.next_review.isoformat()
                 })
         
