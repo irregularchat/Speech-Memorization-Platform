@@ -31,6 +31,12 @@ urlpatterns = [
     path('api/practice/streaming-chunk/', ai_practice_views.process_streaming_speech_chunk, name='process_streaming_speech_chunk'),
     path('api/practice/stop-streaming/', ai_practice_views.stop_streaming_session, name='stop_streaming_session'),
     
+    # Phrase-based practice endpoints (Natural Speech)
+    path('api/practice/phrase/start/', ai_practice_views.start_phrase_practice_session, name='start_phrase_practice_session'),
+    path('api/practice/phrase/process/', ai_practice_views.process_phrase_speech, name='process_phrase_speech'),
+    path('api/practice/phrase/next/', ai_practice_views.get_next_phrase, name='get_next_phrase'),
+    path('api/practice/phrase/complete/', ai_practice_views.complete_phrase_practice_session, name='complete_phrase_practice_session'),
+    
     # Enhanced practice API endpoints
     path('api/enhanced/start-word-reveal/', enhanced_practice_views.start_word_reveal_session, name='start_word_reveal_session'),
     path('api/enhanced/start-delayed-recall/', enhanced_practice_views.start_delayed_recall_session, name='start_delayed_recall_session'),
