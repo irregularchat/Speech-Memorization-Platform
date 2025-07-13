@@ -283,6 +283,171 @@
         padding-left: 1.5rem;
     }
     
+    /* Phrase-based practice styles */
+    .phrase-display {
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        font-size: 1.2rem;
+        line-height: 1.6;
+        min-height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+    
+    .phrase-display.listening {
+        border-color: #007bff;
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        animation: pulse 2s infinite;
+    }
+    
+    .phrase-display.processing {
+        border-color: #ffc107;
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    }
+    
+    .phrase-display.success {
+        border-color: #28a745;
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    }
+    
+    .phrase-display.error {
+        border-color: #dc3545;
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    }
+    
+    /* Word-level diff highlighting */
+    .word-correct {
+        background: #d4edda;
+        color: #155724;
+        padding: 2px 4px;
+        border-radius: 3px;
+        margin: 0 2px;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .word-error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 2px 4px;
+        border-radius: 3px;
+        margin: 0 2px;
+        border: 1px solid #f5c6cb;
+        position: relative;
+        cursor: help;
+        text-decoration: line-through;
+    }
+    
+    .word-error:hover::after {
+        content: attr(title);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #343a40;
+        color: white;
+        padding: 5px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        z-index: 1000;
+        margin-bottom: 5px;
+    }
+    
+    .word-missing {
+        background: #fff3cd;
+        color: #856404;
+        padding: 2px 4px;
+        border-radius: 3px;
+        margin: 0 2px;
+        border: 1px solid #ffeaa7;
+        font-style: italic;
+    }
+    
+    .word-extra {
+        background: #d1ecf1;
+        color: #0c5460;
+        padding: 2px 4px;
+        border-radius: 3px;
+        margin: 0 2px;
+        border: 1px solid #bee5eb;
+        text-decoration: overline;
+    }
+    
+    /* Speech recognition status */
+    .speech-status {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-align: center;
+        margin: 0.5rem 0;
+        transition: all 0.3s ease;
+    }
+    
+    .speech-status.listening {
+        background: #e3f2fd;
+        color: #1976d2;
+        border: 1px solid #90caf9;
+    }
+    
+    .speech-status.processing {
+        background: #fff3e0;
+        color: #f57c00;
+        border: 1px solid #ffcc02;
+    }
+    
+    .speech-status.success {
+        background: #e8f5e8;
+        color: #2e7d32;
+        border: 1px solid #a5d6a7;
+    }
+    
+    .speech-status.error {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #ef9a9a;
+    }
+    
+    /* Practice mode toggle */
+    .practice-mode-selector {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .mode-button {
+        background: white;
+        border: 2px solid #dee2e6;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        margin: 0 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .mode-button.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .mode-button:hover:not(.active) {
+        border-color: #007bff;
+        color: #007bff;
+    }
+    
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+    }
+    
     @keyframes slideDown {
         0% { opacity: 0; transform: translateY(-10px); }
         100% { opacity: 1; transform: translateY(0); }
@@ -435,9 +600,37 @@
             </div>
         </div>
 
+        <!-- Practice Mode Selector -->
+        <div class="practice-mode-selector">
+            <div class="d-flex justify-content-center align-items-center">
+                <span class="me-3"><strong>Practice Mode:</strong></span>
+                <button class="mode-button active" id="wordMode" onclick="switchPracticeMode('word')">
+                    <i class="fas fa-font"></i> Word-by-Word
+                </button>
+                <button class="mode-button" id="phraseMode" onclick="switchPracticeMode('phrase')">
+                    <i class="fas fa-comments"></i> Natural Phrases
+                </button>
+            </div>
+            <div class="text-center mt-2">
+                <small class="text-muted" id="modeDescription">
+                    Practice one word at a time for precise memorization
+                </small>
+            </div>
+        </div>
+
         <!-- Enhanced Text Display -->
         <div class="practice-text" id="practiceText">
             {{ initial_display_text|safe }}
+        </div>
+        
+        <!-- Phrase Display (for phrase-based practice) -->
+        <div class="phrase-display d-none" id="phraseDisplay">
+            <div id="phraseContent">Click "Start Practice" to begin</div>
+        </div>
+        
+        <!-- Speech Status Display -->
+        <div class="speech-status d-none" id="speechStatus">
+            Ready to listen...
         </div>
 
         <!-- Progress Information -->
@@ -598,6 +791,12 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Enhanced Speech Processing Scripts -->
+<script src="{% load static %}{% static 'js/device_capability_manager.js' %}"></script>
+<script src="{% load static %}{% static 'js/audio_processor.js' %}"></script>
+<script src="{% load static %}{% static 'js/streaming_speech_recorder.js' %}"></script>
+<script src="{% load static %}{% static 'js/web_speech_recognizer.js' %}"></script>
+<script src="{% load static %}{% static 'js/enhanced_speech_manager.js' %}"></script>
 <script src="{% load static %}{% static 'js/ai_speech_recorder.js' %}"></script>
 <script>
 // Global state variables
@@ -616,9 +815,12 @@ let practiceEngine = {
     hintDelaySeconds: 3.0
 };
 
-// AI Speech recognition
+// Enhanced Speech recognition
+let speechManager = null;
 let aiSpeechManager = null;
 let isListening = false;
+let currentPracticeMode = 'word'; // 'word' or 'phrase'
+let phraseSessionKey = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -827,6 +1029,21 @@ async function initializeAISpeech() {
     if (!practiceEngine.sessionKey) return;
     
     try {
+        // Initialize enhanced speech manager with both Web Speech API and streaming
+        speechManager = new EnhancedSpeechManager({
+            useWebSpeech: true,
+            useStreaming: true,
+            preferWebSpeech: true,  // Better for natural speech
+            confidenceThreshold: 0.5,
+            timeout: 15000,  // 15 seconds for natural speech
+            onResult: handleEnhancedSpeechResult,
+            onInterimResult: handleInterimSpeechResult,
+            onError: handleSpeechError,
+            onStart: () => updateSpeechStatus('listening'),
+            onStop: () => updateSpeechStatus('idle')
+        });
+        
+        // Keep AI speech manager as fallback
         aiSpeechManager = new AISpeechPracticeManager(practiceEngine.sessionKey, {
             onSpeechProcessed: handleAISpeechResult,
             onError: handleSpeechError,
@@ -836,27 +1053,38 @@ async function initializeAISpeech() {
         await aiSpeechManager.initializeRecorder();
         startContinuousListening();
         
+        console.log('Enhanced speech recognition initialized');
+        console.log('Available methods:', speechManager.getAvailableMethods());
+        
     } catch (error) {
-        console.error('Failed to initialize AI speech:', error);
-        showError('Microphone setup failed: ' + error.message);
+        console.error('Failed to initialize speech recognition:', error);
+        showError('Speech recognition setup failed: ' + error.message);
     }
 }
 
 async function startContinuousListening() {
-    if (!aiSpeechManager || !practiceEngine.isActive || practiceEngine.isPaused) return;
+    if (!practiceEngine.isActive || practiceEngine.isPaused) return;
     
     isListening = true;
     document.getElementById('volumeIndicator').style.display = 'block';
     
     try {
-        await aiSpeechManager.startListening();
-        
-        // Auto-restart listening after processing (for continuous mode)
-        setTimeout(() => {
-            if (isListening && practiceEngine.isActive && !practiceEngine.isPaused) {
-                startContinuousListening();
-            }
-        }, 1000);
+        // Try enhanced speech manager first (Web Speech API + streaming)
+        if (speechManager && speechManager.getAvailableMethods().length > 0) {
+            console.log('Starting enhanced speech recognition');
+            await speechManager.startRecognition();
+        } else if (aiSpeechManager) {
+            // Fallback to AI speech manager
+            console.log('Fallback to AI speech manager');
+            await aiSpeechManager.startListening();
+            
+            // Auto-restart listening after processing (for continuous mode)
+            setTimeout(() => {
+                if (isListening && practiceEngine.isActive && !practiceEngine.isPaused) {
+                    startContinuousListening();
+                }
+            }, 1000);
+        }
         
     } catch (error) {
         console.error('Failed to start listening:', error);
@@ -868,11 +1096,132 @@ function stopSpeechListening() {
     isListening = false;
     document.getElementById('volumeIndicator').style.display = 'none';
     
+    if (speechManager) {
+        speechManager.stopRecognition();
+    }
+    
     if (aiSpeechManager) {
         aiSpeechManager.stopListening();
     }
     
     updateSpeechStatus('ready', 'Ready to listen...');
+}
+
+function handleEnhancedSpeechResult(result) {
+    console.log('Enhanced speech result:', result);
+    
+    // Show interim transcription
+    if (!result.isFinal) {
+        updateSpeechStatus('processing', `Heard: "${result.transcript}"`);
+        return;
+    }
+    
+    // Process final transcription
+    if (result.transcript && result.transcript.trim().length > 0) {
+        processFinalTranscription(result.transcript, result.confidence, result.method);
+    } else {
+        updateSpeechStatus('listening', 'No speech detected, keep talking...');
+        // Restart listening automatically for Web Speech API
+        if (result.method === 'webspeech') {
+            setTimeout(() => {
+                if (isListening && practiceEngine.isActive && !practiceEngine.isPaused) {
+                    speechManager.startRecognition();
+                }
+            }, 500);
+        }
+    }
+}
+
+function handleInterimSpeechResult(result) {
+    // Show live transcription feedback
+    updateSpeechStatus('listening', `Listening: "${result.transcript}"`);
+}
+
+async function processFinalTranscription(transcript, confidence, method) {
+    console.log(`Final transcription from ${method}:`, transcript, 'confidence:', confidence);
+    
+    // Send to backend for word matching and analysis
+    try {
+        const response = await fetch('{% url "process_word_speech" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                'session_key': practiceEngine.sessionKey,
+                'transcription': transcript,
+                'confidence': confidence,
+                'method': method
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            handleWordMatchResult(result);
+        } else {
+            console.error('Word processing failed:', result.error);
+            updateSpeechStatus('error', 'Processing failed, try again');
+            
+            // Restart listening
+            setTimeout(() => {
+                if (isListening && practiceEngine.isActive && !practiceEngine.isPaused) {
+                    startContinuousListening();
+                }
+            }, 1000);
+        }
+        
+    } catch (error) {
+        console.error('Error processing transcription:', error);
+        updateSpeechStatus('error', 'Network error, try again');
+        
+        // Restart listening
+        setTimeout(() => {
+            if (isListening && practiceEngine.isActive && !practiceEngine.isPaused) {
+                startContinuousListening();
+            }
+        }, 1000);
+    }
+}
+
+function handleWordMatchResult(result) {
+    practiceEngine.attempts++;
+    document.getElementById('attemptsDisplay').textContent = practiceEngine.attempts;
+    
+    // Display feedback
+    if (result.ai_feedback) {
+        displayAIFeedback(result.ai_feedback, result.word_correct);
+    }
+    
+    if (result.word_correct) {
+        // Word correctly recognized - advance
+        hideAIFeedback();
+        
+        if (result.is_complete) {
+            completePracticeSession();
+        } else {
+            practiceEngine.currentWordIndex = result.word_index;
+            practiceEngine.currentWord = result.current_word;
+            updateDisplay(result);
+            startWordTiming();
+            
+            // Continue listening for next word
+            setTimeout(() => {
+                if (isListening && practiceEngine.isActive && !practiceEngine.isPaused) {
+                    startContinuousListening();
+                }
+            }, 500);
+        }
+    } else {
+        // Keep listening for corrections
+        updateSpeechStatus('listening', 'Try again, speak clearly...');
+        setTimeout(() => {
+            if (isListening && practiceEngine.isActive && !practiceEngine.isPaused) {
+                startContinuousListening();
+            }
+        }, 1500);
+    }
 }
 
 function handleAISpeechResult(result) {
@@ -1262,5 +1611,341 @@ function showError(message) {
         }
     }, 5000);
 }
+
+// =============================================================================
+// PHRASE-BASED PRACTICE FUNCTIONS
+// =============================================================================
+
+function switchPracticeMode(mode) {
+    if (practiceEngine.isActive) {
+        showError('Stop current practice session before switching modes');
+        return;
+    }
+    
+    currentPracticeMode = mode;
+    
+    // Update UI
+    document.getElementById('wordMode').classList.toggle('active', mode === 'word');
+    document.getElementById('phraseMode').classList.toggle('active', mode === 'phrase');
+    
+    // Update display
+    if (mode === 'word') {
+        document.getElementById('practiceText').classList.remove('d-none');
+        document.getElementById('phraseDisplay').classList.add('d-none');
+        document.getElementById('speechStatus').classList.add('d-none');
+        document.getElementById('modeDescription').textContent = 'Practice one word at a time for precise memorization';
+    } else {
+        document.getElementById('practiceText').classList.add('d-none');
+        document.getElementById('phraseDisplay').classList.remove('d-none');
+        document.getElementById('speechStatus').classList.remove('d-none');
+        document.getElementById('modeDescription').textContent = 'Speak naturally in phrases and sentences';
+    }
+    
+    console.log(`Switched to ${mode} practice mode`);
+}
+
+function startPhrasePractice() {
+    fetch('{% url "start_phrase_practice_session" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            'text_id': {{ text.id }},
+            'phrase_length': 8  // 8 words per phrase
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            phraseSessionKey = data.session_key;
+            practiceEngine.isActive = true;
+            practiceEngine.startTime = new Date();
+            
+            // Display first phrase
+            displayPhrase(data.phrase_data);
+            updateUI('active');
+            initializeAISpeech();
+            startPhraseListening();
+            
+            updateSpeechStatus('ready', 'Ready to listen - speak the phrase naturally');
+        } else {
+            showError('Failed to start phrase practice: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Network error starting phrase practice');
+    });
+}
+
+function displayPhrase(phraseData) {
+    const phraseContent = document.getElementById('phraseContent');
+    phraseContent.innerHTML = phraseData.phrase_text;
+    
+    // Update progress
+    document.getElementById('progressBar').style.width = phraseData.progress_percentage + '%';
+    document.getElementById('progressText').textContent = 
+        `${phraseData.progress_percentage.toFixed(1)}% Complete`;
+}
+
+function startPhraseListening() {
+    if (!speechManager || !practiceEngine.isActive) return;
+    
+    updateSpeechStatus('listening', 'Listening... speak naturally');
+    document.getElementById('phraseDisplay').className = 'phrase-display listening';
+    
+    speechManager.startRecognition().then(started => {
+        if (!started) {
+            updateSpeechStatus('error', 'Failed to start listening');
+            document.getElementById('phraseDisplay').className = 'phrase-display error';
+        }
+    });
+}
+
+function processFinalTranscription(transcript, confidence, method) {
+    console.log(`Final transcription from ${method}:`, transcript, 'confidence:', confidence);
+    
+    updateSpeechStatus('processing', 'Processing your speech...');
+    document.getElementById('phraseDisplay').className = 'phrase-display processing';
+    
+    // Send to backend for phrase processing
+    fetch('{% url "process_phrase_speech" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            'session_key': phraseSessionKey,
+            'transcription': transcript,
+            'confidence': confidence,
+            'method': method
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            handlePhraseResult(data);
+        } else {
+            console.error('Phrase processing failed:', data.error);
+            updateSpeechStatus('error', 'Processing failed, try again');
+            document.getElementById('phraseDisplay').className = 'phrase-display error';
+            
+            // Restart listening
+            setTimeout(() => {
+                if (practiceEngine.isActive && currentPracticeMode === 'phrase') {
+                    startPhraseListening();
+                }
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        console.error('Error processing phrase:', error);
+        updateSpeechStatus('error', 'Network error, try again');
+        document.getElementById('phraseDisplay').className = 'phrase-display error';
+        
+        // Restart listening
+        setTimeout(() => {
+            if (practiceEngine.isActive && currentPracticeMode === 'phrase') {
+                startPhraseListening();
+            }
+        }, 2000);
+    });
+}
+
+function handlePhraseResult(result) {
+    console.log('Phrase result:', result);
+    
+    // Update attempts counter
+    practiceEngine.attempts = result.session_info.total_attempts;
+    document.getElementById('attemptsDisplay').textContent = practiceEngine.attempts;
+    
+    if (result.phrase_correct) {
+        // Phrase was correct enough or we're allowing progression
+        let statusMessage = `Great! Accuracy: ${result.accuracy.toFixed(1)}%`;
+        
+        if (result.advancement_type === 'partial_progression') {
+            statusMessage = `Good progress! Moving forward - ${result.words_added_to_review || 0} words marked for review`;
+        } else if (result.advancement_type === 'partial_with_skips') {
+            statusMessage = `Good enough! We'll review missed words later`;
+        }
+        
+        updateSpeechStatus('success', statusMessage);
+        document.getElementById('phraseDisplay').className = 'phrase-display success';
+        
+        // Show highlighted feedback with errors marked in red
+        if (result.highlighted_html) {
+            document.getElementById('phraseContent').innerHTML = result.highlighted_html;
+        }
+        
+        // Show brief feedback about missed words if any
+        if (result.missed_words && result.missed_words.length > 0) {
+            const missedWordsText = `Missed: ${result.missed_words.join(', ')}`;
+            setTimeout(() => {
+                updateSpeechStatus('success', `${statusMessage} | ${missedWordsText}`);
+            }, 1000);
+        }
+        
+        // Check if practice is complete
+        if (result.practice_complete) {
+            setTimeout(() => completePhraseSession(result), 3000);
+        } else {
+            // Move to next phrase
+            setTimeout(() => {
+                if (result.next_phrase) {
+                    displayPhrase(result.next_phrase);
+                    updateSpeechStatus('ready', 'Ready for next phrase');
+                    document.getElementById('phraseDisplay').className = 'phrase-display';
+                    
+                    setTimeout(() => {
+                        if (practiceEngine.isActive && currentPracticeMode === 'phrase') {
+                            startPhraseListening();
+                        }
+                    }, 1000);
+                }
+            }, 3000);
+        }
+    } else {
+        // Phrase needs improvement
+        let attemptsLeft = result.max_attempts - result.phrase_attempt_count;
+        let statusMessage = `Try again - Accuracy: ${result.accuracy.toFixed(1)}%`;
+        
+        if (attemptsLeft > 0) {
+            statusMessage += ` (${attemptsLeft} attempts left)`;
+        } else {
+            statusMessage = `Keep trying! Focus on the highlighted words`;
+        }
+        
+        updateSpeechStatus('error', statusMessage);
+        document.getElementById('phraseDisplay').className = 'phrase-display error';
+        
+        // Show highlighted feedback with errors
+        if (result.highlighted_html) {
+            document.getElementById('phraseContent').innerHTML = result.highlighted_html;
+        }
+        
+        // Show AI feedback if available
+        if (result.ai_feedback && result.ai_feedback.ai_analysis) {
+            displayAIFeedback(result.ai_feedback, false);
+        }
+        
+        // Restart listening after delay
+        setTimeout(() => {
+            if (practiceEngine.isActive && currentPracticeMode === 'phrase') {
+                document.getElementById('phraseDisplay').className = 'phrase-display';
+                startPhraseListening();
+            }
+        }, 3000);
+    }
+}
+
+function completePhraseSession(result) {
+    fetch('{% url "complete_phrase_practice_session" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            'session_key': phraseSessionKey
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.session_summary) {
+            displayPhraseSessionResults(data.session_summary);
+        }
+        
+        practiceEngine.isActive = false;
+        phraseSessionKey = null;
+        stopSpeechListening();
+        updateUI('complete');
+        updateSpeechStatus('success', 'Practice session completed!');
+    })
+    .catch(error => {
+        console.error('Error completing phrase session:', error);
+        showError('Error completing session');
+    });
+}
+
+function displayPhraseSessionResults(summary) {
+    let missedWordsSection = '';
+    
+    if (summary.missed_words_for_review && summary.missed_words_for_review.length > 0) {
+        const missedWordsHtml = summary.missed_words_for_review
+            .map(item => `<span class="badge bg-warning me-1">${item.word} (${item.missed_count}x)</span>`)
+            .join('');
+        
+        missedWordsSection = `
+            <div class="mt-3 p-3 bg-light rounded">
+                <h6><i class="fas fa-exclamation-triangle text-warning"></i> Words for Review:</h6>
+                <p class="small text-muted mb-2">These words were missed during practice. Consider reviewing them:</p>
+                <div>${missedWordsHtml}</div>
+            </div>
+        `;
+    }
+    
+    const resultsHtml = `
+        <div class="alert alert-success">
+            <h4><i class="fas fa-check-circle"></i> Phrase Practice Complete!</h4>
+            <div class="row mt-3">
+                <div class="col-md-3 text-center">
+                    <h5>${summary.phrases_completed}</h5>
+                    <small>Phrases Completed</small>
+                </div>
+                <div class="col-md-3 text-center">
+                    <h5>${summary.total_attempts}</h5>
+                    <small>Total Attempts</small>
+                </div>
+                <div class="col-md-3 text-center">
+                    <h5>${summary.completion_rate.toFixed(1)}%</h5>
+                    <small>Completion Rate</small>
+                </div>
+                <div class="col-md-3 text-center">
+                    <h5>${(summary.session_duration / 60).toFixed(1)}m</h5>
+                    <small>Duration</small>
+                </div>
+            </div>
+            <div class="mt-3">
+                <p><strong>Words Covered:</strong> ${summary.total_words_covered} / ${summary.total_words}</p>
+                <p class="text-muted">Great job practicing with natural speech patterns!</p>
+            </div>
+            ${missedWordsSection}
+        </div>
+    `;
+    
+    document.getElementById('sessionResults').innerHTML = resultsHtml;
+    document.getElementById('sessionResults').style.display = 'block';
+}
+
+function updateSpeechStatus(status, message) {
+    const statusEl = document.getElementById('speechStatus');
+    statusEl.className = `speech-status ${status}`;
+    statusEl.textContent = message;
+    
+    console.log(`Speech status: ${status} - ${message}`);
+}
+
+// Override the existing start practice function to handle both modes
+const originalStartAdaptivePractice = startAdaptivePractice;
+startAdaptivePractice = function() {
+    if (currentPracticeMode === 'phrase') {
+        startPhrasePractice();
+    } else {
+        originalStartAdaptivePractice();
+    }
+};
+
+// Override processFinalTranscription function for phrase mode
+const originalProcessFinalTranscription = window.processFinalTranscription || function() {};
+window.processFinalTranscription = function(transcript, confidence, method) {
+    if (currentPracticeMode === 'phrase' && phraseSessionKey) {
+        processFinalTranscription(transcript, confidence, method);
+    } else {
+        originalProcessFinalTranscription(transcript, confidence, method);
+    }
+};
 </script>
 {% endblock %}
