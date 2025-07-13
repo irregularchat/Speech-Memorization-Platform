@@ -1,11 +1,11 @@
-# Django Speech Memorization Platform Requirements
+# Django Speech Memorization Platform Requirements (Development)
 
 # Core Django framework
 Django>=4.2.0,<5.0
 djangorestframework>=3.14.0
 
-# Database
-psycopg2-binary>=2.9.0
+# Database (using SQLite for development)
+# psycopg2-binary>=2.9.0  # Commented out for dev
 
 # User authentication
 django-allauth>=0.54.0
@@ -19,9 +19,8 @@ celery>=5.3.0
 redis>=4.5.0
 django-redis>=5.4.0
 
-# Audio processing
-pydub>=0.25.0
-pyaudio>=0.2.11
+# Audio processing (browser-based, no PyAudio needed)
+# pyaudio>=0.2.11  # Commented out - using Web Audio API
 SpeechRecognition>=3.10.0
 
 # API and data validation
@@ -53,17 +52,13 @@ librosa>=0.10.0
 
 # Enhanced audio processing
 soundfile>=0.12.0
-webrtcvad>=2.0.10
+# webrtcvad>=2.0.10  # Optional, will handle missing gracefully
 
 # Multi-provider speech recognition
 requests>=2.31.0
-google-cloud-speech>=2.21.0  # Optional: for Google Cloud Speech API
-azure-cognitiveservices-speech>=1.30.0  # Optional: for Azure Speech Services
+# google-cloud-speech>=2.21.0  # Optional: for Google Cloud Speech API
+# azure-cognitiveservices-speech>=1.30.0  # Optional: for Azure Speech Services
 
 # Audio analysis and enhancement
 scipy>=1.11.0  # For advanced signal processing
-resampy>=0.4.0  # For audio resampling
-
-# Legacy requirements (to be phased out)
-# streamlit  # REMOVE after migration
-# flask      # REMOVE after migration
+# resampy>=0.4.0  # For audio resampling
