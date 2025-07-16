@@ -797,6 +797,7 @@
 <script src="{% load static %}{% static 'js/streaming_speech_recorder.js' %}"></script>
 <script src="{% load static %}{% static 'js/web_speech_recognizer.js' %}"></script>
 <script src="{% load static %}{% static 'js/enhanced_speech_manager.js' %}"></script>
+<script src="{% load static %}{% static 'js/google_speech_streaming.js' %}"></script>
 <script src="{% load static %}{% static 'js/ai_speech_recorder.js' %}"></script>
 <script>
 // Global state variables
@@ -818,6 +819,7 @@ let practiceEngine = {
 // Enhanced Speech recognition
 let speechManager = null;
 let aiSpeechManager = null;
+let googleSpeechIntegration = null;
 let isListening = false;
 let currentPracticeMode = 'word'; // 'word' or 'phrase'
 let phraseSessionKey = null;
