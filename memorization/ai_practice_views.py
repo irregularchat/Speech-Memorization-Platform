@@ -12,6 +12,7 @@ from django.utils import timezone
 from .models import Text, PracticeSession, WordProgress
 from .practice_service import AdaptivePracticeEngine
 from .ai_speech_service import SpeechToTextProcessor, IntelligentSpeechAnalyzer, AudioProcessor, PhraseBasedPracticeEngine
+from .google_speech_service import GoogleSpeechStreamingService, GoogleSpeechBatchService
 import time
 from threading import Lock
 

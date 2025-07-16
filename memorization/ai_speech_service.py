@@ -118,7 +118,7 @@ class SpeechToTextProcessor:
                     self._update_provider_error(provider_name)
                     
             except Exception as e:
-                logger.error(f"{provider_name} provider exception: {str(e)}")
+                logger.error(f"{provider_name} provider exception: {str(e)}", exc_info=True)
                 self._update_provider_error(provider_name)
                 continue
         
@@ -428,7 +428,7 @@ class PhraseBasedSpeechAnalyzer:
             }
             
         except Exception as e:
-            logger.error(f"Phrase analysis error: {str(e)}")
+            logger.error(f"Phrase analysis error: {str(e)}", exc_info=True)
             return {
                 'success': False,
                 'error': str(e),
@@ -729,7 +729,7 @@ class PhraseBasedPracticeEngine:
             }
             
         except Exception as e:
-            logger.error(f"Phrase processing error: {str(e)}")
+            logger.error(f"Phrase processing error: {str(e)}", exc_info=True)
             return {
                 'success': False,
                 'error': str(e),
@@ -835,7 +835,7 @@ class AudioProcessor:
                     return wav_buffer.getvalue()
                     
         except Exception as e:
-            logger.error(f"Audio processing error: {str(e)}")
+            logger.error(f"Audio processing error: {str(e)}", exc_info=True)
             # Return original data if processing fails
             return audio_data
     
@@ -892,7 +892,7 @@ class AudioProcessor:
                 }
                 
         except Exception as e:
-            logger.error(f"Audio quality validation error: {str(e)}")
+            logger.error(f"Audio quality validation error: {str(e)}", exc_info=True)
             return {
                 'quality_score': 0.5,
                 'issues': ['Could not analyze audio quality'],
