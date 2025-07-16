@@ -21,7 +21,7 @@ django-redis>=5.4.0
 
 # Audio processing
 pydub>=0.25.0
-pyaudio>=0.2.11
+pyaudio>=0.2.13
 SpeechRecognition>=3.10.0
 
 # API and data validation
