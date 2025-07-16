@@ -1,0 +1,47 @@
+# Production-specific requirements
+
+# WSGI Server
+gunicorn>=21.0.0
+uvicorn[standard]>=0.23.0
+
+# Static files optimization
+whitenoise[brotli]>=6.5.0
+
+# Security enhancements
+django-security>=0.18.0
+django-csp>=3.7
+
+# Monitoring and logging
+sentry-sdk[django]>=1.32.0
+prometheus-client>=0.17.0
+
+# Performance monitoring
+django-extensions>=3.2.0
+django-silk>=5.0.0
+
+# Database optimization
+django-cachalot>=2.5.1
+
+# Rate limiting
+django-ratelimit>=4.1.0
+
+# Health checks
+django-health-check>=3.17.0
+
+# Backup utilities
+django-dbbackup>=4.0.0
+
+# Task scheduling
+django-celery-beat>=2.5.0
+
+# CORS handling for production APIs
+django-cors-headers>=4.2.0
+
+# Environment variable management
+python-decouple>=3.8
+
+# SSL/TLS support
+pyOpenSSL>=23.2.0
+
+# Compression
+django-compressor>=4.4
