@@ -139,28 +139,14 @@ OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
 # Google Cloud Speech Configuration
 GOOGLE_CLOUD_PROJECT_ID = config('GOOGLE_CLOUD_PROJECT_ID', default='')
 
-# Cache configuration - use Redis if available, otherwise in-memory
-REDIS_URL = config('REDIS_URL', default='')
-if REDIS_URL:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': REDIS_URL,
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            }
-        }
+# Use in-memory cache for App Engine
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'speech-memorization-cache',
     }
-    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-    SESSION_CACHE_ALIAS = 'default'
-else:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'speech-memorization-cache',
-        }
-    }
-    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+}
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 # Session configuration
 SESSION_COOKIE_AGE = 86400  # 24 hours

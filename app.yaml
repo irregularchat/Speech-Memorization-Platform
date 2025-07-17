@@ -1,79 +1,35 @@
-# Google Cloud Run configuration file
-# This is used for Cloud Run deployment
+runtime: python311
 
-apiVersion: serving.knative.dev/v1
-kind: Service
-metadata:
-  name: speech-memorization
-  annotations:
-    run.googleapis.com/ingress: all
-    run.googleapis.com/execution-environment: gen2
-spec:
-  template:
-    metadata:
-      annotations:
-        # Allocate more CPU and memory for speech processing
-        run.googleapis.com/cpu: "2"
-        run.googleapis.com/memory: "4Gi"
-        run.googleapis.com/max-scale: "10"
-        run.googleapis.com/min-scale: "1"
-        # Connection timeout for long speech processing requests
-        run.googleapis.com/timeout: "300s"
-        # Enable Cloud SQL connection
-        run.googleapis.com/cloudsql-instances: "PROJECT_ID:REGION:INSTANCE_NAME"
-    spec:
-      containerConcurrency: 100
-      timeoutSeconds: 300
-      serviceAccountName: "speech-memorization-sa@PROJECT_ID.iam.gserviceaccount.com"
-      containers:
-      - image: gcr.io/PROJECT_ID/speech-memorization:latest
-        ports:
-        - containerPort: 8080
-        env:
-        - name: DEBUG
-          value: "False"
-        - name: SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: django-secret
-              key: secret-key
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: database-config
-              key: url
-        - name: REDIS_URL
-          valueFrom:
-            secretKeyRef:
-              name: redis-config
-              key: url
-        - name: OPENAI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: openai-config
-              key: api-key
-        - name: GOOGLE_CLOUD_PROJECT_ID
-          value: "PROJECT_ID"
-        - name: ALLOWED_HOSTS
-          value: "*"
-        resources:
-          limits:
-            cpu: "2"
-            memory: "4Gi"
-          requests:
-            cpu: "1"
-            memory: "2Gi"
-        livenessProbe:
-          httpGet:
-            path: /health/
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          timeoutSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /health/
-            port: 8080
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 5
+env_variables:
+  DJANGO_SETTINGS_MODULE: speech_memorization.settings_cloud
+  DEBUG: False
+  GOOGLE_CLOUD_PROJECT_ID: serverless-test-12345
+  ALLOWED_HOSTS: "*"
+
+automatic_scaling:
+  min_instances: 0
+  max_instances: 10
+  target_cpu_utilization: 0.6
+
+resources:
+  cpu: 1
+  memory_gb: 2
+  disk_size_gb: 10
+
+handlers:
+# Static files
+- url: /static
+  static_dir: staticfiles
+  secure: always
+
+# Media files  
+- url: /media
+  static_dir: media
+  secure: always
+
+# All other URLs go to Django
+- url: /.*
+  script: auto
+  secure: always
+
+entrypoint: gunicorn speech_memorization.wsgi:application --bind :$PORT --workers 2 --timeout 120

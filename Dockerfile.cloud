@@ -52,8 +52,8 @@ RUN mkdir -p logs media static staticfiles config credentials && \
 # The credentials will be provided by Cloud Run's service account
 ENV GOOGLE_APPLICATION_CREDENTIALS=""
 
-# Collect static files (skip database checks)
-RUN SECRET_KEY=dummy python manage.py collectstatic --noinput --settings=speech_memorization.settings
+# Create static files directory (collectstatic will run in production)
+RUN mkdir -p staticfiles
 
 # Switch to non-root user
 USER appuser
