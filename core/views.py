@@ -15,7 +15,13 @@ from analytics.models import UserAnalytics
 def home(request):
     """Home page view - main memorization interface."""
     if not request.user.is_authenticated:
-        return redirect('login')
+        # Show public landing page
+        texts = Text.objects.filter(is_public=True).order_by('-created_at')[:5]
+        context = {
+            'texts': texts,
+            'is_public': True,
+        }
+        return render(request, 'core/home.html', context)
     
     # Get available texts
     texts = Text.objects.filter(is_public=True).order_by('-created_at')
