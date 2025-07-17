@@ -688,7 +688,45 @@ class PhraseBasedPracticeEngine:
             'progress_percentage': (end_pos / len(words)) * 100
         }
     
-    def add_missed_words(self, words: List[str], phrase_context: str):\n        \"\"\"Add missed words to review bank\"\"\"\n        import time\n        for word in words:\n            if word not in [item['word'] for item in self.missed_words_bank]:\n                self.missed_words_bank.append({\n                    'word': word,\n                    'context': phrase_context,\n                    'missed_count': 1,\n                    'timestamp': time.time()\n                })\n            else:\n                # Increment miss count for existing word\n                for item in self.missed_words_bank:\n                    if item['word'] == word:\n                        item['missed_count'] += 1\n                        break\n    \n    def get_missed_words_for_review(self) -> List[Dict]:\n        \"\"\"Get words that need review\"\"\"\n        # Sort by miss count and recency\n        import time\n        return sorted(\n            self.missed_words_bank,\n            key=lambda x: (x['missed_count'], -x['timestamp']),\n            reverse=True\n        )\n    \n    def should_allow_skip(self, phrase_id: str, attempt_count: int) -> bool:\n        \"\"\"Determine if user should be allowed to skip after multiple attempts\"\"\"\n        # Allow skip after 3 attempts\n        return attempt_count >= 3\n    \n    def increment_attempt_count(self, phrase_id: str) -> int:\n        \"\"\"Track attempt counts per phrase\"\"\"\n        if phrase_id not in self.attempt_counts:\n            self.attempt_counts[phrase_id] = 0\n        self.attempt_counts[phrase_id] += 1\n        return self.attempt_counts[phrase_id]
+    def add_missed_words(self, words: List[str], phrase_context: str):
+        """Add missed words to review bank"""
+        import time
+        for word in words:
+            if word not in [item['word'] for item in self.missed_words_bank]:
+                self.missed_words_bank.append({
+                    'word': word,
+                    'context': phrase_context,
+                    'missed_count': 1,
+                    'timestamp': time.time()
+                })
+            else:
+                # Increment miss count for existing word
+                for item in self.missed_words_bank:
+                    if item['word'] == word:
+                        item['missed_count'] += 1
+                        break
+    
+    def get_missed_words_for_review(self) -> List[Dict]:
+        """Get words that need review"""
+        # Sort by miss count and recency
+        import time
+        return sorted(
+            self.missed_words_bank,
+            key=lambda x: (x['missed_count'], -x['timestamp']),
+            reverse=True
+        )
+    
+    def should_allow_skip(self, phrase_id: str, attempt_count: int) -> bool:
+        """Determine if user should be allowed to skip after multiple attempts"""
+        # Allow skip after 3 attempts
+        return attempt_count >= 3
+    
+    def increment_attempt_count(self, phrase_id: str) -> int:
+        """Track attempt counts per phrase"""
+        if phrase_id not in self.attempt_counts:
+            self.attempt_counts[phrase_id] = 0
+        self.attempt_counts[phrase_id] += 1
+        return self.attempt_counts[phrase_id]
     
     def process_phrase_speech(self, spoken_text: str, expected_phrase: str, context: str = "") -> Dict:
         """Process spoken phrase with smart progression logic"""

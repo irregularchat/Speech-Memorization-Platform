@@ -1,5 +1,6 @@
 from django.urls import path
-from . import views, practice_views, ai_practice_views, enhanced_practice_views, streaming_views
+from . import views, practice_views, ai_practice_views, enhanced_practice_views
+# from . import streaming_views  # Temporarily disabled due to missing channels dependency
 
 urlpatterns = [
     # Text management
@@ -37,10 +38,10 @@ urlpatterns = [
     path('api/practice/phrase/next/', ai_practice_views.get_next_phrase, name='get_next_phrase'),
     path('api/practice/phrase/complete/', ai_practice_views.complete_phrase_practice_session, name='complete_phrase_practice_session'),
     
-    # Google Cloud Speech streaming endpoints
-    path('api/streaming/start/', streaming_views.start_streaming_session, name='start_streaming_session'),
-    path('api/streaming/stop/', streaming_views.stop_streaming_session, name='stop_streaming_session'),
-    path('api/streaming/check-availability/', streaming_views.check_streaming_availability, name='check_streaming_availability'),
+    # Google Cloud Speech streaming endpoints (temporarily disabled)
+    # path('api/streaming/start/', streaming_views.start_streaming_session, name='start_streaming_session'),
+    # path('api/streaming/stop/', streaming_views.stop_streaming_session, name='stop_streaming_session'),
+    # path('api/streaming/check-availability/', streaming_views.check_streaming_availability, name='check_streaming_availability'),
     
     # Enhanced practice API endpoints
     path('api/enhanced/start-word-reveal/', enhanced_practice_views.start_word_reveal_session, name='start_word_reveal_session'),

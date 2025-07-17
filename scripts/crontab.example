@@ -1,0 +1,24 @@
+# Example crontab configuration for Speech Memorization Platform
+# Edit with: crontab -e
+# View with: crontab -l
+
+# Daily backup at 2 AM
+0 2 * * * /app/scripts/backup.sh >> /var/log/speech-memorization/backup.log 2>&1
+
+# Weekly maintenance on Sundays at 3 AM  
+0 3 * * 0 /app/scripts/maintenance.sh >> /var/log/speech-memorization/maintenance.log 2>&1
+
+# Monitoring every 5 minutes
+*/5 * * * * /app/scripts/monitor.sh >> /var/log/speech-memorization/monitor.log 2>&1
+
+# Clear Django sessions weekly
+0 4 * * 1 docker-compose -f /app/docker-compose.prod.yml exec -T web python manage.py clearsessions
+
+# Log rotation monthly
+0 0 1 * * find /var/log/speech-memorization -name "*.log" -type f -mtime +30 -delete
+
+# Database optimization weekly (PostgreSQL only)
+0 1 * * 1 [ "$DB_ENGINE" = "postgresql" ] && PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -c "VACUUM ANALYZE;"
+
+# Check SSL certificate expiration monthly
+0 9 1 * * openssl x509 -in /app/nginx/ssl/cert.pem -noout -checkend 2592000 || echo "SSL certificate expires within 30 days" | mail -s "SSL Certificate Warning" $ADMIN_EMAIL
