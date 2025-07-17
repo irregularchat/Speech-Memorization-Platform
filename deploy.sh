@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Speech Memorization Platform Production Deployment Script
-set -e
+# Speech Memorization Platform - Quick Deploy Script
+# This script automates the deployment process to Google Cloud Run
 
-echo "🚀 Starting Speech Memorization Platform deployment..."
+set -e  # Exit on any error
 
 # Configuration
-DEPLOYMENT_ENV=${1:-production}
-PROJECT_ROOT=$(pwd)
-BACKUP_DIR="./backups"
-CONFIG_DIR="./config"
+PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID:-"speech-memorization"}
+REGION=${GOOGLE_CLOUD_REGION:-"us-central1"}
+SERVICE_NAME=${SERVICE_NAME:-"speech-memorization"}
+IMAGE_NAME="gcr.io/$PROJECT_ID/$SERVICE_NAME:latest"
 
 # Colors for output
 RED='\033[0;31m'
@@ -18,6 +18,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Helper functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
@@ -34,243 +35,189 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Pre-deployment checks
-check_requirements() {
-    log_info "Checking deployment requirements..."
+# Check prerequisites
+check_prerequisites() {
+    log_info "Checking prerequisites..."
     
-    # Check Docker
+    # Check if gcloud is installed
+    if ! command -v gcloud &> /dev/null; then
+        log_error "Google Cloud CLI (gcloud) is not installed. Please install it first."
+        exit 1
+    fi
+    
+    # Check if docker is installed
     if ! command -v docker &> /dev/null; then
-        log_error "Docker is not installed. Please install Docker first."
+        log_error "Docker is not installed. Please install it first."
         exit 1
     fi
     
-    # Check Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
-        log_error "Docker Compose is not installed. Please install Docker Compose first."
+    # Check if user is authenticated
+    if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
+        log_error "You are not authenticated with Google Cloud. Please run 'gcloud auth login' first."
         exit 1
     fi
     
-    # Check environment file
-    if [ ! -f ".env.${DEPLOYMENT_ENV}" ]; then
-        log_error "Environment file .env.${DEPLOYMENT_ENV} not found."
-        log_info "Please copy .env.${DEPLOYMENT_ENV}.example to .env.${DEPLOYMENT_ENV} and configure it."
+    # Check if project exists and user has access
+    if ! gcloud projects describe "$PROJECT_ID" &> /dev/null; then
+        log_error "Project '$PROJECT_ID' does not exist or you don't have access to it."
+        log_info "Available projects:"
+        gcloud projects list --format="table(projectId,name)"
         exit 1
     fi
     
-    # Check Google Cloud credentials
-    if [ ! -f "${CONFIG_DIR}/google-cloud-service-account.json" ]; then
-        log_warning "Google Cloud service account file not found at ${CONFIG_DIR}/google-cloud-service-account.json"
-        log_warning "Speech recognition may not work properly without Google Cloud credentials."
-    fi
-    
-    log_success "All requirements check passed!"
+    log_success "Prerequisites check passed!"
 }
 
-# Backup existing data
-backup_data() {
-    log_info "Creating backup of existing data..."
+# Set up project
+setup_project() {
+    log_info "Setting up project '$PROJECT_ID'..."
     
-    mkdir -p "$BACKUP_DIR"
-    BACKUP_FILE="${BACKUP_DIR}/backup_$(date +%Y%m%d_%H%M%S).tar.gz"
+    # Set the project
+    gcloud config set project "$PROJECT_ID"
     
-    # Backup database if running
-    if docker-compose -f docker-compose.prod.yml ps db | grep -q "Up"; then
-        log_info "Backing up database..."
-        docker-compose -f docker-compose.prod.yml exec -T db pg_dump -U $DATABASE_USER -d $DATABASE_NAME | gzip > "${BACKUP_DIR}/db_backup_$(date +%Y%m%d_%H%M%S).sql.gz"
-    fi
+    # Enable required APIs
+    log_info "Enabling required APIs..."
+    gcloud services enable run.googleapis.com
+    gcloud services enable containerregistry.googleapis.com
+    gcloud services enable cloudbuild.googleapis.com
+    gcloud services enable secretmanager.googleapis.com
     
-    # Backup media files
-    if [ -d "./media" ]; then
-        log_info "Backing up media files..."
-        tar -czf "$BACKUP_FILE" ./media
-        log_success "Backup created: $BACKUP_FILE"
-    fi
+    # Configure Docker for Google Cloud
+    gcloud auth configure-docker --quiet
+    
+    log_success "Project setup complete!"
 }
 
-# Build and deploy
-deploy_application() {
-    log_info "Deploying application..."
+# Build and push Docker image
+build_and_push() {
+    log_info "Building and pushing Docker image..."
     
-    # Load environment variables
-    source ".env.${DEPLOYMENT_ENV}"
-    
-    # Build images
-    log_info "Building Docker images..."
-    docker-compose -f docker-compose.prod.yml build --no-cache
-    
-    # Start services
-    log_info "Starting services..."
-    docker-compose -f docker-compose.prod.yml up -d
-    
-    # Wait for database to be ready
-    log_info "Waiting for database to be ready..."
-    sleep 10
-    
-    # Run migrations
-    log_info "Running database migrations..."
-    docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput
-    
-    # Collect static files
-    log_info "Collecting static files..."
-    docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
-    
-    # Create superuser if it doesn't exist
-    log_info "Creating superuser if needed..."
-    docker-compose -f docker-compose.prod.yml exec -T web python manage.py shell -c "
-from django.contrib.auth.models import User
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
-    print('Superuser created: admin/admin123')
-else:
-    print('Superuser already exists')
-"
-    
-    log_success "Application deployed successfully!"
-}
-
-# Health check
-health_check() {
-    log_info "Performing health checks..."
-    
-    # Check if services are running
-    if ! docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
-        log_error "Some services are not running properly"
-        docker-compose -f docker-compose.prod.yml ps
-        exit 1
-    fi
-    
-    # Check web service health
-    log_info "Checking web service health..."
-    sleep 15  # Give time for services to start
-    
-    if curl -f http://localhost/health/ > /dev/null 2>&1; then
-        log_success "Web service is healthy"
+    # Detect architecture
+    ARCH=$(uname -m)
+    if [[ "$ARCH" == "arm64" || "$ARCH" == "aarch64" ]]; then
+        log_info "Detected Apple Silicon (ARM64). Building for linux/amd64..."
+        docker buildx build --platform linux/amd64 -t "$IMAGE_NAME" --push .
     else
-        log_warning "Web service health check failed - this might be normal during startup"
+        log_info "Building for current architecture..."
+        docker build -t "$IMAGE_NAME" .
+        docker push "$IMAGE_NAME"
     fi
     
-    # Check Google Cloud Speech availability
-    log_info "Checking Google Cloud Speech integration..."
-    if docker-compose -f docker-compose.prod.yml exec -T web python -c "
-from memorization.google_speech_service import GoogleSpeechBatchService
-service = GoogleSpeechBatchService()
-print('Google Speech available:', service.is_available())
-"; then
-        log_success "Google Cloud Speech integration check completed"
+    log_success "Docker image built and pushed successfully!"
+}
+
+# Deploy to Cloud Run
+deploy() {
+    log_info "Deploying to Cloud Run..."
+    
+    # Deploy the service
+    gcloud run deploy "$SERVICE_NAME" \
+        --image "$IMAGE_NAME" \
+        --region "$REGION" \
+        --platform managed \
+        --allow-unauthenticated \
+        --memory 512Mi \
+        --cpu 1 \
+        --max-instances 5 \
+        --min-instances 0
+    
+    # Get the service URL
+    SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region="$REGION" --format="value(status.url)")
+    
+    log_success "Deployment successful!"
+    log_info "Service URL: $SERVICE_URL"
+    
+    # Check if service is accessible
+    log_info "Testing service accessibility..."
+    if curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL" | grep -q "200\|403"; then
+        log_success "Service is responding!"
+        log_warning "If you see a 403 error, you may need to disable IAM authentication manually:"
+        log_info "1. Go to Google Cloud Console → Cloud Run → Services"
+        log_info "2. Click on '$SERVICE_NAME'"
+        log_info "3. Go to Security tab"
+        log_info "4. Uncheck 'IAM authentication' for incoming requests"
+        log_info "5. Click Save"
     else
-        log_warning "Google Cloud Speech integration check failed"
+        log_error "Service is not responding. Check the logs:"
+        log_info "gcloud logs read --service=$SERVICE_NAME --limit=20"
     fi
 }
 
-# SSL setup
-setup_ssl() {
-    log_info "Setting up SSL certificates..."
-    
-    # Create SSL directory
-    mkdir -p "${CONFIG_DIR}/ssl"
-    
-    if [ ! -f "${CONFIG_DIR}/ssl/cert.pem" ] || [ ! -f "${CONFIG_DIR}/ssl/key.pem" ]; then
-        log_warning "SSL certificates not found. Generating self-signed certificates for development..."
-        
-        # Generate self-signed certificate
-        openssl req -x509 -newkey rsa:4096 -keyout "${CONFIG_DIR}/ssl/key.pem" -out "${CONFIG_DIR}/ssl/cert.pem" -days 365 -nodes -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
-        
-        log_warning "Self-signed certificates generated. For production, replace with valid SSL certificates."
-    else
-        log_success "SSL certificates found"
-    fi
-}
-
-# Monitoring setup
-setup_monitoring() {
-    log_info "Setting up monitoring..."
-    
-    # Create Prometheus config if it doesn't exist
-    if [ ! -f "${CONFIG_DIR}/prometheus.yml" ]; then
-        cat > "${CONFIG_DIR}/prometheus.yml" << EOF
-global:
-  scrape_interval: 15s
-
-scrape_configs:
-  - job_name: 'django'
-    static_configs:
-      - targets: ['web:8000']
-    metrics_path: '/metrics/'
-    scrape_interval: 30s
-
-  - job_name: 'nginx'
-    static_configs:
-      - targets: ['nginx:80']
-EOF
-        log_success "Prometheus configuration created"
-    fi
-}
-
-# Show deployment information
-show_deployment_info() {
-    log_success "🎉 Deployment completed successfully!"
-    echo
-    log_info "Application Information:"
-    echo "  📊 Application URL: https://localhost (or your configured domain)"
-    echo "  👤 Admin URL: https://localhost/admin/"
-    echo "  🔑 Default admin credentials: admin / admin123"
-    echo "  📈 Monitoring: http://localhost:9090 (Prometheus)"
-    echo
-    log_info "Useful Commands:"
-    echo "  📋 View logs: docker-compose -f docker-compose.prod.yml logs -f"
-    echo "  🔄 Restart services: docker-compose -f docker-compose.prod.yml restart"
-    echo "  🛑 Stop services: docker-compose -f docker-compose.prod.yml down"
-    echo "  🗄️  Database shell: docker-compose -f docker-compose.prod.yml exec db psql -U \$DATABASE_USER -d \$DATABASE_NAME"
-    echo
-    log_warning "Important Notes:"
-    echo "  • Change default admin password immediately"
-    echo "  • Configure proper SSL certificates for production"
-    echo "  • Set up regular backups"
-    echo "  • Monitor application performance and logs"
-    echo "  • Configure Google Cloud Speech API for full functionality"
-}
-
-# Main deployment process
+# Main deployment function
 main() {
-    log_info "🎯 Speech Memorization Platform - Production Deployment"
-    echo "   Environment: $DEPLOYMENT_ENV"
-    echo "   Timestamp: $(date)"
+    echo "🚀 Speech Memorization Platform - Deployment Script"
+    echo "=================================================="
+    echo "Project ID: $PROJECT_ID"
+    echo "Region: $REGION"
+    echo "Service Name: $SERVICE_NAME"
+    echo ""
+    
+    # Check if user wants to proceed
+    read -p "Do you want to proceed with deployment? (y/N): " -n 1 -r
     echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Deployment cancelled."
+        exit 0
+    fi
     
-    check_requirements
-    backup_data
-    setup_ssl
-    setup_monitoring
-    deploy_application
-    health_check
-    show_deployment_info
+    # Run deployment steps
+    check_prerequisites
+    setup_project
+    build_and_push
+    deploy
     
-    log_success "✅ Deployment completed successfully!"
+    echo ""
+    log_success "🎉 Deployment completed successfully!"
+    echo ""
+    log_info "Next steps:"
+    log_info "1. Visit your service URL to test the application"
+    log_info "2. Set up environment variables in Cloud Run if needed"
+    log_info "3. Configure custom domain (optional)"
+    log_info "4. Set up monitoring and alerts"
+    echo ""
+    log_info "For troubleshooting, see DEPLOYMENT_GUIDE.md"
 }
 
-# Handle script arguments
-case "$1" in
-    "production"|"staging"|"")
-        main
-        ;;
-    "health")
-        health_check
-        ;;
-    "backup")
-        backup_data
-        ;;
-    "ssl")
-        setup_ssl
-        ;;
-    *)
-        echo "Usage: $0 [production|staging|health|backup|ssl]"
-        echo
-        echo "Commands:"
-        echo "  production  - Deploy to production (default)"
-        echo "  staging     - Deploy to staging"
-        echo "  health      - Run health checks only"
-        echo "  backup      - Create backup only"
-        echo "  ssl         - Set up SSL certificates only"
-        exit 1
-        ;;
-esac
+# Handle command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --project-id)
+            PROJECT_ID="$2"
+            shift 2
+            ;;
+        --region)
+            REGION="$2"
+            shift 2
+            ;;
+        --service-name)
+            SERVICE_NAME="$2"
+            shift 2
+            ;;
+        --help)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --project-id PROJECT_ID    Google Cloud project ID (default: speech-memorization)"
+            echo "  --region REGION           Google Cloud region (default: us-central1)"
+            echo "  --service-name NAME       Cloud Run service name (default: speech-memorization)"
+            echo "  --help                    Show this help message"
+            echo ""
+            echo "Environment variables:"
+            echo "  GOOGLE_CLOUD_PROJECT_ID   Google Cloud project ID"
+            echo "  GOOGLE_CLOUD_REGION       Google Cloud region"
+            echo "  SERVICE_NAME              Cloud Run service name"
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+# Update IMAGE_NAME with potentially new PROJECT_ID
+IMAGE_NAME="gcr.io/$PROJECT_ID/$SERVICE_NAME:latest"
+
+# Run main function
+main

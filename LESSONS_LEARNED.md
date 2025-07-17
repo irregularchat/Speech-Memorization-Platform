@@ -1,5 +1,78 @@
 # Lessons Learned: Speech Memorization Platform
 
+## Recent Deployment Experience (July 2024)
+
+### 1. Organization Policy Challenges
+
+**Challenge**: Google Cloud organization policies preventing public access to Cloud Run services.
+
+**Error**: 
+```
+ERROR: Policy modification failed. For a binding with condition, run "gcloud alpha iam policies lint-condition" to identify issues in condition.
+ERROR: (gcloud.run.services.add-iam-policy-binding) FAILED_PRECONDITION: One or more users named in the policy do not belong to a permitted customer, perhaps due to an organization policy.
+```
+
+**Root Cause**: Organization policy `constraints/iam.allowedPolicyMemberDomains` restricting IAM members to specific domains.
+
+**Solution**: 
+- Access the service through Google Cloud Console with proper authentication
+- Or manually disable IAM authentication in Cloud Run service settings:
+  1. Go to Google Cloud Console → Cloud Run → Services
+  2. Click on your service
+  3. Go to Security tab
+  4. Uncheck "IAM authentication" for incoming requests
+
+**Lesson**: Organization policies can override project-level permissions. Always check both project and organization-level policies.
+
+### 2. Missing Dependencies in Container
+
+**Challenge**: Application failing with `ModuleNotFoundError: No module named 'librosa'`
+
+**Root Cause**: Dependencies commented out in `requirements.txt` for "initial deployment"
+
+**Solution**: 
+- Uncomment required dependencies in `requirements.txt`
+- Ensure all application dependencies are included, not just "minimal" ones
+- Test container builds locally before deployment
+
+**Lesson**: Don't skip dependencies for "quick deployment" - it creates more problems than it solves.
+
+### 3. Architecture Mismatch Issues
+
+**Challenge**: Docker build failing due to ARM64 vs AMD64 architecture mismatch on Apple Silicon Macs.
+
+**Error**: Cloud Run rejecting ARM64 images
+
+**Solution**: 
+```bash
+# Build for correct architecture
+docker buildx build --platform linux/amd64 -t gcr.io/PROJECT_ID/IMAGE:latest --push .
+```
+
+**Lesson**: Always specify target platform when building containers for cloud deployment.
+
+### 4. Database Migration in Container Build
+
+**Challenge**: Django migrations failing during container build due to missing dependencies.
+
+**Solution**: 
+- Install all dependencies first
+- Run migrations during build process
+- Ensure database is properly initialized
+
+**Lesson**: Database setup should happen during build, not runtime, for containerized applications.
+
+### 5. Repository Cleanup and Git Management
+
+**Challenge**: Large files and unnecessary directories being tracked in git.
+
+**Solution**: 
+- Comprehensive `.gitignore` updates
+- Remove tracked files that should be ignored
+- Commit changes in logical, story-driven phases
+
+**Lesson**: Keep repositories clean from the start. Large files and generated content should never be committed.
+
 ## Cloud Native Deployment Challenges and Solutions
 
 ### 1. Docker Build Issues

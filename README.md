@@ -4,9 +4,67 @@ An interactive application designed to help users memorize and practice military
 
 Imagine how lyrics from your favorite songs display on Apple Music or on karaoke apps. Now imagine using that same app to memorize and practice your speeches by gradually increasing the difficulty and removing the displayed words of the text you need to memorize.
 
-**✅ CURRENTLY FUNCTIONAL** - Core features implemented and ready for testing! See installation instructions below.
+**✅ DEPLOYED AND LIVE** - Successfully deployed to Google Cloud Run! See [deployment guide](DEPLOYMENT_GUIDE.md) for details.
 
+**🌐 Live Demo**: [Speech Memorization Platform](https://speech-memorization-nesvf2duwa-uc.a.run.app)
 
+## Quick Start
+
+### Option 1: Try the Live Demo
+Visit the deployed application: [https://speech-memorization-nesvf2duwa-uc.a.run.app](https://speech-memorization-nesvf2duwa-uc.a.run.app)
+
+### Option 2: Deploy Your Own Instance
+Follow our comprehensive [Deployment Guide](DEPLOYMENT_GUIDE.md) to deploy your own instance on Google Cloud Run.
+
+**Quick Deploy Commands:**
+```bash
+# Clone and setup
+git clone <repository-url>
+cd Speech-Memorization-Platform
+
+# Build and deploy (Apple Silicon Macs)
+docker buildx build --platform linux/amd64 \
+  -t gcr.io/YOUR-PROJECT/speech-memorization:latest \
+  --push .
+
+gcloud run deploy speech-memorization \
+  --image gcr.io/YOUR-PROJECT/speech-memorization:latest \
+  --region us-central1 \
+  --platform managed
+```
+
+### Option 3: Local Development
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run migrations
+python manage.py migrate
+
+# Start development server
+python manage.py runserver
+```
+
+## Recent Updates (July 2024)
+
+✅ **Successfully Deployed to Production**
+- Deployed to Google Cloud Run with full functionality
+- Resolved organization policy challenges for public access
+- Fixed dependency issues (librosa, numpy, etc.)
+- Implemented proper database migrations in container build
+- Added comprehensive deployment documentation
+
+🔧 **Key Fixes Applied**
+- Uncommented required dependencies in `requirements.txt`
+- Added architecture-specific Docker builds for Apple Silicon
+- Implemented proper `.gitignore` and repository cleanup
+- Created minimal Django settings for cloud deployment
+- Added database migrations to Dockerfile
+
+📚 **Documentation Added**
+- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Complete deployment guide
+- Updated [LESSONS_LEARNED.md](LESSONS_LEARNED.md) with recent insights
+- Troubleshooting section for common deployment issues
 
 ## Contributing
 
@@ -15,8 +73,6 @@ We welcome contributions to this project. Please read our [CONTRIBUTING.md](CONT
 For the direction of the project, please read our [ROADMAP.md](ROADMAP.md) file.
 
 Join the Matrix Room to discuss the project: [Matrix Room](https://matrix.to/#/%23speech-memorization-platform:irregularchat.com).
-
-
 
 ## Features
 
@@ -31,14 +87,13 @@ Join the Matrix Room to discuss the project: [Matrix Room](https://matrix.to/#/%
 - **Database Models**: Full ORM with proper relationships and constraints
 - **Admin Interface**: Django admin for content management
 - **AJAX Endpoints**: Real-time API for dynamic interactions
+- **Cloud Deployment**: Production-ready Google Cloud Run deployment
 
 ### 🚧 **Planned Features**
 - **Section-wise Practice**: Practice specific paragraphs or sentences
 - **Stop Words Filtering**: Intelligent filtering of articles and conjunctions
 - **Structured Text Format**: Rich metadata with titles, descriptions, and tags
 - **Community Sharing**: Share and discover texts from other users
-
-
 
 ## Installation
 
@@ -89,6 +144,8 @@ Join the Matrix Room to discuss the project: [Matrix Room](https://matrix.to/#/%
 
 ### Cloud Deployment (Google Cloud Run)
 
+**For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)**
+
 #### Prerequisites
 - Google Cloud account with billing enabled
 - Google Cloud CLI installed and authenticated
@@ -100,51 +157,22 @@ Join the Matrix Room to discuss the project: [Matrix Room](https://matrix.to/#/%
 export GOOGLE_CLOUD_PROJECT_ID=your-project-id
 export OPENAI_API_KEY=your-openai-key
 
-# Simple deployment (SQLite database)
-./deploy-simple.sh
+# Build and deploy
+docker buildx build --platform linux/amd64 \
+  -t gcr.io/YOUR-PROJECT/speech-memorization:latest \
+  --push .
+
+gcloud run deploy speech-memorization \
+  --image gcr.io/YOUR-PROJECT/speech-memorization:latest \
+  --region us-central1 \
+  --platform managed
 ```
 
-#### Full Production Deploy
-```bash
-# Deploy with Cloud SQL and Redis
-./deploy-cloud.sh
-```
-
-#### Google Cloud Setup Steps
-1. **Install Google Cloud CLI**
-   ```bash
-   curl https://sdk.cloud.google.com | bash
-   exec -l $SHELL  # Restart shell
-   ```
-
-2. **Authenticate and set project**
-   ```bash
-   gcloud auth login
-   gcloud config set project your-project-id
-   ```
-
-3. **Enable required APIs**
-   ```bash
-   gcloud services enable speech.googleapis.com cloudbuild.googleapis.com run.googleapis.com
-   ```
-
-4. **Set up Application Default Credentials**
-   ```bash
-   gcloud auth application-default login
-   ```
-
-5. **Create service account**
-   ```bash
-   gcloud iam service-accounts create speech-memorization-sa
-   gcloud projects add-iam-policy-binding your-project-id \
-     --member="serviceAccount:speech-memorization-sa@your-project-id.iam.gserviceaccount.com" \
-     --role="roles/speech.admin"
-   ```
-
-6. **Deploy the application**
-   ```bash
-   ./deploy-simple.sh
-   ```
+#### Important Notes for Deployment
+1. **Dependencies**: Ensure all dependencies in `requirements.txt` are uncommented
+2. **Architecture**: Use `--platform linux/amd64` for Apple Silicon Macs
+3. **Organization Policies**: If you get IAM policy errors, use Google Cloud Console to disable IAM authentication
+4. **Billing**: Enable billing on your Google Cloud project before deployment
 
 ### Docker Development
 
@@ -155,7 +183,7 @@ For local development with Docker:
 docker-compose up --build
 
 # Or build for cloud deployment
-docker build -f Dockerfile.cloud -t speech-memorization .
+docker build -t speech-memorization .
 ```
 
 ## Architecture
@@ -180,7 +208,6 @@ docker build -f Dockerfile.cloud -t speech-memorization .
 3. **Adjust settings**: Use mastery level to control word visibility
 4. **Practice speaking**: Natural speech recognition with intelligent progression
 5. **Track progress**: Detailed analytics and missed word review
-
 
 ## Usage
 
@@ -215,6 +242,7 @@ docker build -f Dockerfile.cloud -t speech-memorization .
 - Check Docker daemon is running
 - Ensure sufficient disk space (2GB+ recommended)
 - Review build logs for specific dependency issues
+- For Apple Silicon Macs: use `--platform linux/amd64`
 
 **Speech Recognition Not Working**
 - Verify microphone permissions in browser
@@ -226,9 +254,14 @@ docker build -f Dockerfile.cloud -t speech-memorization .
 - Check database connection settings in `.env`
 - For SQLite: ensure write permissions in project directory
 
+**Organization Policy Errors**
+- Use Google Cloud Console to disable IAM authentication manually
+- Or contact your organization admin to modify domain restrictions
+
 ### Getting Help
-- Review [LESSONS_LEARNED.md](LESSONS_LEARNED.md) for deployment insights
-- Check [ROADMAP.md](ROADMAP.md) for project direction
+- Review [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for detailed deployment instructions
+- Check [LESSONS_LEARNED.md](LESSONS_LEARNED.md) for deployment insights and troubleshooting
+- Review [ROADMAP.md](ROADMAP.md) for project direction
 - Join our [Matrix Room](https://matrix.to/#/%23speech-memorization-platform:irregularchat.com) for community support
 
 ## Contributing
