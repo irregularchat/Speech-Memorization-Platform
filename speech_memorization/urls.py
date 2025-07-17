@@ -36,6 +36,9 @@ urlpatterns = [
     path('', include('memorization.urls')),
     path('about/', core_views.about, name='about'),
     
+    # Health check for Google Cloud Run
+    path('health/', core_views.health_check, name='health_check'),
+    
     # AJAX endpoints
     path('api/update-mastery/', core_views.update_mastery_level, name='update_mastery_level'),
     path('api/start-session/', core_views.start_practice_session, name='start_practice_session'),

@@ -229,3 +229,12 @@ def text_list(request):
 def about(request):
     """About page."""
     return render(request, 'core/about.html')
+
+
+@require_http_methods(["GET"])
+def health_check(request):
+    """Health check endpoint for Google Cloud Run"""
+    return JsonResponse({
+        'status': 'healthy',
+        'service': 'speech-memorization-platform'
+    })
