@@ -15,7 +15,11 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-production-key-change
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['*']  # Configure this properly for production
+ALLOWED_HOSTS = [
+    'speech-memorization-nesvf2duwa-uc.a.run.app',
+    'localhost',
+    '127.0.0.1',
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -205,6 +209,9 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',  # For local development
     'http://127.0.0.1:8000',  # For local development
 ]
+
+# Trust Cloud Run's HTTPS headers
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Additional security headers
 SECURE_HSTS_SECONDS = 31536000  # 1 year
