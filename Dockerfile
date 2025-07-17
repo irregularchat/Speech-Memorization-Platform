@@ -1,91 +1,26 @@
-# Multi-stage build for Speech Memorization Platform with AI
-FROM python:3.11-slim AS base
+FROM python:3.11-slim
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    NUMBA_CACHE_DIR=/tmp \
-    LIBROSA_CACHE_DIR=/tmp
+    PORT=8080 \
+    DJANGO_SETTINGS_MODULE=speech_memorization.settings_minimal
 
-# Install system dependencies for AI processing
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Build essentials
-    build-essential \
-    gcc \
-    g++ \
-    # Audio processing libraries
-    libsndfile1-dev \
-    libsndfile1 \
-    portaudio19-dev \
-    libasound2-dev \
-    pulseaudio \
-    # FFmpeg for audio format conversion
-    ffmpeg \
-    # SSL and compression
-    libssl-dev \
-    libffi-dev \
-    zlib1g-dev \
-    # PostgreSQL client
-    libpq-dev \
-    # Git for potential package installations
-    git \
-    # Cleanup
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create app user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
-# Set working directory
 WORKDIR /app
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Install only essential dependencies
+RUN pip install Django==5.2.4 gunicorn==23.0.0 whitenoise==6.8.2
 
-# Install Python dependencies
-RUN pip install --upgrade pip setuptools wheel && \
-    pip install -r requirements.txt
-
-# Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Copy application code
+# Copy app code
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p logs media static staticfiles && \
-    chown -R appuser:appuser /app
+# Create static files directory and collect static
+RUN mkdir -p staticfiles && \
+    python manage.py collectstatic --noinput
 
-# Switch to non-root user
+# Create user and set permissions
+RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD python manage.py check --deploy || exit 1
+EXPOSE 8080
 
-# Expose port
-EXPOSE 8000
-
-# Set entrypoint
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-
-# Default command
-CMD ["web"]
-
-# Development stage
-FROM base AS development
-
-USER root
-
-# Install development dependencies
-RUN pip install django-debug-toolbar ipython
-
-# Switch back to app user
-USER appuser
-
-# Development command
-CMD ["web"]
+CMD ["gunicorn", "speech_memorization.wsgi:application", "--bind", "0.0.0.0:8080", "--workers", "1"]
