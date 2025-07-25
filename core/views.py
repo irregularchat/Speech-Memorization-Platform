@@ -14,18 +14,28 @@ from analytics.models import UserAnalytics
 
 def home(request):
     """Home page view - main memorization interface."""
-    if not request.user.is_authenticated:
-        # Show public landing page
-        texts = Text.objects.filter(is_public=True).order_by('-created_at')[:5]
+    try:
+        if not request.user.is_authenticated:
+            # Show public landing page
+            texts = Text.objects.filter(is_public=True).order_by('-created_at')[:5]
+            context = {
+                'texts': texts,
+                'is_public': True,
+            }
+            return render(request, 'core/home.html', context)
+        
+        # Get available texts
+        texts = Text.objects.filter(is_public=True).order_by('-created_at')
+        user_texts = Text.objects.filter(created_by=request.user).order_by('-created_at')
+    except Exception as e:
+        # If database tables don't exist, show a simple welcome page
         context = {
-            'texts': texts,
+            'texts': [],
             'is_public': True,
+            'database_error': True,
+            'error_message': 'Database not initialized. Please run migrations.',
         }
         return render(request, 'core/home.html', context)
-    
-    # Get available texts
-    texts = Text.objects.filter(is_public=True).order_by('-created_at')
-    user_texts = Text.objects.filter(created_by=request.user).order_by('-created_at')
     
     # Get user's recent sessions
     recent_sessions = PracticeSession.objects.filter(

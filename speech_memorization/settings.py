@@ -27,7 +27,14 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-bw4dtda+0i0ig55e8hk9g
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+# Always allow all hosts for deployment simplicity
+ALLOWED_HOSTS = ['*']
+
+# Debug output to confirm settings
+import sys
+print("SETTINGS: ALLOWED_HOSTS set to ['*']", file=sys.stderr, flush=True)
+print(f"SETTINGS: DEBUG is {config('DEBUG', default=True, cast=bool)}", file=sys.stderr, flush=True)
+print(f"SETTINGS: PORT environment: {os.environ.get('PORT', 'Not set')}", file=sys.stderr, flush=True)
 
 
 # Application definition
@@ -103,10 +110,19 @@ if DB_ENGINE == 'postgresql':
         }
     }
 else:
+    # SQLite configuration with Cloud Run support
+    if os.environ.get('PORT'):  # Cloud Run
+        # Use /tmp directory for Cloud Run
+        db_path = '/tmp/db.sqlite3'
+        print(f"CLOUD RUN DETECTED: Using database at {db_path}", flush=True)
+    else:
+        # Local development
+        db_path = BASE_DIR / 'db.sqlite3'
+    
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': db_path,
         }
     }
 

@@ -55,7 +55,10 @@ staticfiles/
 
 # Docker
 Dockerfile
-Dockerfile.*
+Dockerfile.simple
+Dockerfile.cloud
+Dockerfile.prod
+!Dockerfile.minimal
 docker-compose*.yml
 .dockerignore
 
@@ -75,6 +78,15 @@ scripts/
 tests/
 test_*.py
 *_test.py
+
+# Google Cloud SDK (large directory)
+google-cloud-sdk/
+google-cloud-sdk*
+
+# Additional large files
+*.sqlite3
+*.db
+deploy*.sh
 
 # Coverage reports
 htmlcov/
