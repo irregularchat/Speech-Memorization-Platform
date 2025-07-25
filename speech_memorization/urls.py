@@ -45,8 +45,8 @@ urlpatterns = [
     path('api/complete-session/', core_views.complete_practice_session, name='complete_practice_session'),
     
     # Authentication
-    path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('login/', core_views.demo_login, name='login'),
+    path('logout/', core_views.demo_logout, name='logout'),
     path('signup/', auth_views.LoginView.as_view(template_name='registration/signup.html'), name='signup'),
     
     # App includes (for future development)

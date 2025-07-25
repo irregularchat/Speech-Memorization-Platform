@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.contrib.auth.models import AnonymousUser
+from functools import wraps
 import json
 
 # Try to import models, but handle gracefully if they don't exist
@@ -15,6 +17,25 @@ try:
     MODELS_AVAILABLE = True
 except Exception:
     MODELS_AVAILABLE = False
+
+
+def demo_login_required(view_func):
+    """Custom login decorator that works with demo mode."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        # Check if user is authenticated normally
+        if request.user.is_authenticated:
+            return view_func(request, *args, **kwargs)
+        
+        # Check if demo session exists
+        if request.session.get('demo_user'):
+            return view_func(request, *args, **kwargs)
+        
+        # Not authenticated, redirect to login
+        from django.contrib.auth.views import redirect_to_login
+        return redirect_to_login(request.get_full_path(), '/login/')
+    
+    return wrapper
 
 
 def home(request):
@@ -99,6 +120,7 @@ def home(request):
     return render(request, 'core/home.html', context)
 
 
+@demo_login_required
 def practice_text(request, text_id):
     """Practice page for a specific text."""
     if not MODELS_AVAILABLE:
@@ -259,6 +281,7 @@ def complete_practice_session(request):
         return JsonResponse({'error': 'Invalid request data'}, status=400)
 
 
+@demo_login_required
 def analytics(request):
     """Analytics dashboard view."""
     if not MODELS_AVAILABLE:
@@ -331,6 +354,39 @@ def text_list(request):
 def about(request):
     """About page."""
     return render(request, 'core/about.html')
+
+
+def demo_login(request):
+    """Demo login view that bypasses database authentication."""
+    if request.method == 'POST':
+        # In demo mode, always succeed
+        username = request.POST.get('username', 'demo')
+        
+        # Create a fake session for demo purposes
+        request.session['demo_user'] = True
+        request.session['demo_username'] = username
+        
+        # Redirect to next page or home
+        next_url = request.GET.get('next', '/')
+        messages.success(request, f'Demo mode: Logged in as {username}')
+        return redirect(next_url)
+    
+    return render(request, 'registration/login.html', {
+        'demo_mode': True,
+        'demo_message': 'Demo mode - any credentials will work'
+    })
+
+
+def demo_logout(request):
+    """Demo logout view."""
+    # Clear demo session
+    if 'demo_user' in request.session:
+        del request.session['demo_user']
+    if 'demo_username' in request.session:
+        del request.session['demo_username']
+    
+    messages.success(request, 'Demo mode: Logged out successfully')
+    return redirect('/')
 
 
 @require_http_methods(["GET"])
