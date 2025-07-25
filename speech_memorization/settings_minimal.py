@@ -65,11 +65,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'speech_memorization.wsgi.application'
 
-# Database - SQLite for simplicity
+# Database - In-memory SQLite for App Engine
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': ':memory:',
     }
 }
 
