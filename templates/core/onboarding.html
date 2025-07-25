@@ -1,0 +1,524 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome to Speech Memorization{% endblock %}
+
+{% block content %}
+<div class="onboarding-container">
+    <!-- Step 1: Welcome & Value Proposition -->
+    <div class="onboarding-step active" id="step-1">
+        <div class="hero-section">
+            <div class="hero-animation">
+                <div class="speech-waves">
+                    <div class="wave"></div>
+                    <div class="wave"></div>
+                    <div class="wave"></div>
+                </div>
+                <i class="fas fa-microphone hero-icon"></i>
+            </div>
+            <h1 class="hero-title">Master Any Speech with Your Voice</h1>
+            <p class="hero-subtitle">Revolutionary AI-powered platform that helps you memorize speeches, poems, and presentations using natural speech recognition and proven learning techniques.</p>
+            
+            <div class="value-props">
+                <div class="prop">
+                    <i class="fas fa-brain"></i>
+                    <h3>Smart Learning</h3>
+                    <p>AI adapts to your pace and remembers what you struggle with</p>
+                </div>
+                <div class="prop">
+                    <i class="fas fa-microphone-alt"></i>
+                    <h3>Voice-First</h3>
+                    <p>Practice speaking naturally - no typing required</p>
+                </div>
+                <div class="prop">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Track Progress</h3>
+                    <p>See your improvement with detailed analytics</p>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary btn-lg next-step" onclick="nextStep()">
+                Get Started <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 2: Permission Setup -->
+    <div class="onboarding-step" id="step-2">
+        <div class="permission-setup">
+            <div class="permission-icon">
+                <i class="fas fa-microphone-alt"></i>
+            </div>
+            <h2>Enable Microphone Access</h2>
+            <p>To provide the best speech recognition experience, we need access to your microphone.</p>
+            
+            <div class="permission-benefits">
+                <div class="benefit">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Your voice stays private - we don't store recordings</span>
+                </div>
+                <div class="benefit">
+                    <i class="fas fa-lightning-bolt"></i>
+                    <span>Real-time feedback as you speak</span>
+                </div>
+                <div class="benefit">
+                    <i class="fas fa-trophy"></i>
+                    <span>Accurate progress tracking</span>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary btn-lg" onclick="requestMicrophonePermission()">
+                <i class="fas fa-microphone"></i> Enable Microphone
+            </button>
+            
+            <div class="permission-status" id="permission-status"></div>
+        </div>
+    </div>
+
+    <!-- Step 3: Voice Calibration -->
+    <div class="onboarding-step" id="step-3">
+        <div class="voice-calibration">
+            <h2>Let's Calibrate Your Voice</h2>
+            <p>Say the phrase below to help us optimize speech recognition for you:</p>
+            
+            <div class="calibration-phrase">
+                <div class="phrase-text" id="calibration-text">
+                    "Hello, I'm excited to start memorizing with my voice."
+                </div>
+            </div>
+            
+            <div class="calibration-controls">
+                <button class="btn btn-primary" id="start-calibration" onclick="startCalibration()">
+                    <i class="fas fa-play"></i> Start Speaking
+                </button>
+                <button class="btn btn-secondary" id="skip-calibration" onclick="skipCalibration()">
+                    Skip for Now
+                </button>
+            </div>
+            
+            <div class="calibration-feedback" id="calibration-feedback">
+                <div class="audio-visualizer">
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                </div>
+                <div class="feedback-text">Listening...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 4: Choose Your First Text -->
+    <div class="onboarding-step" id="step-4">
+        <div class="text-selection">
+            <h2>Choose Your First Practice Text</h2>
+            <p>Start with one of these popular options, or upload your own:</p>
+            
+            <div class="starter-texts">
+                <div class="text-card recommended" onclick="selectText('gettysburg')">
+                    <div class="text-badge">Recommended</div>
+                    <h3>Gettysburg Address</h3>
+                    <p class="text-preview">"Four score and seven years ago..."</p>
+                    <div class="text-stats">
+                        <span><i class="fas fa-clock"></i> 2 minutes</span>
+                        <span><i class="fas fa-signal"></i> Beginner</span>
+                    </div>
+                </div>
+                
+                <div class="text-card" onclick="selectText('hamlet')">
+                    <h3>Hamlet's Soliloquy</h3>
+                    <p class="text-preview">"To be or not to be..."</p>
+                    <div class="text-stats">
+                        <span><i class="fas fa-clock"></i> 3 minutes</span>
+                        <span><i class="fas fa-signal"></i> Intermediate</span>
+                    </div>
+                </div>
+                
+                <div class="text-card" onclick="selectText('dream')">
+                    <h3>I Have a Dream</h3>
+                    <p class="text-preview">"I have a dream that one day..."</p>
+                    <div class="text-stats">
+                        <span><i class="fas fa-clock"></i> 5 minutes</span>
+                        <span><i class="fas fa-signal"></i> Advanced</span>
+                    </div>
+                </div>
+                
+                <div class="text-card upload-card" onclick="showUploadOption()">
+                    <i class="fas fa-upload"></i>
+                    <h3>Upload Your Own</h3>
+                    <p class="text-preview">Speech, poem, or presentation</p>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary btn-lg" id="start-practicing" onclick="startPracticing()" disabled>
+                Start Practicing <i class="fas fa-rocket"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="onboarding-progress">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="step-indicators">
+            <div class="step-indicator active" data-step="1">1</div>
+            <div class="step-indicator" data-step="2">2</div>
+            <div class="step-indicator" data-step="3">3</div>
+            <div class="step-indicator" data-step="4">4</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.onboarding-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px 20px;
+    position: relative;
+}
+
+.onboarding-step {
+    display: none;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.onboarding-step.active {
+    display: block;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-animation {
+    position: relative;
+    margin-bottom: 40px;
+}
+
+.hero-icon {
+    font-size: 80px;
+    color: #fff;
+    margin-bottom: 20px;
+}
+
+.speech-waves {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.speech-waves .wave {
+    position: absolute;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    animation: speechPulse 2s ease-out infinite;
+}
+
+.speech-waves .wave:nth-child(1) { animation-delay: 0s; }
+.speech-waves .wave:nth-child(2) { animation-delay: 0.5s; }
+.speech-waves .wave:nth-child(3) { animation-delay: 1s; }
+
+@keyframes speechPulse {
+    0% { width: 100px; height: 100px; opacity: 1; }
+    100% { width: 300px; height: 300px; opacity: 0; }
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    margin-bottom: 40px;
+    opacity: 0.9;
+    line-height: 1.6;
+}
+
+.value-props {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    margin: 40px 0;
+}
+
+.prop {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 30px;
+    transition: transform 0.3s ease;
+}
+
+.prop:hover {
+    transform: translateY(-5px);
+}
+
+.prop i {
+    font-size: 40px;
+    margin-bottom: 15px;
+    color: #ffd700;
+}
+
+.prop h3 {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+}
+
+.permission-setup, .voice-calibration, .text-selection {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 50px;
+}
+
+.permission-icon i {
+    font-size: 100px;
+    margin-bottom: 30px;
+    color: #ffd700;
+}
+
+.permission-benefits {
+    margin: 30px 0;
+}
+
+.benefit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 15px 0;
+    font-size: 1.1rem;
+}
+
+.benefit i {
+    margin-right: 10px;
+    color: #ffd700;
+}
+
+.calibration-phrase {
+    background: rgba(255,255,255,0.2);
+    border-radius: 15px;
+    padding: 30px;
+    margin: 30px 0;
+    font-size: 1.3rem;
+    font-style: italic;
+}
+
+.starter-texts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin: 40px 0;
+}
+
+.text-card {
+    background: rgba(255,255,255,0.15);
+    border-radius: 15px;
+    padding: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    border: 2px solid transparent;
+}
+
+.text-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255,255,255,0.2);
+}
+
+.text-card.selected {
+    border-color: #ffd700;
+    background: rgba(255,215,0,0.2);
+}
+
+.text-card.recommended .text-badge {
+    position: absolute;
+    top: -10px;
+    right: 15px;
+    background: #ffd700;
+    color: #333;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.onboarding-progress {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+}
+
+.progress-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+    margin-bottom: 15px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #ffd700;
+    width: 25%;
+    transition: width 0.5s ease;
+}
+
+.step-indicators {
+    display: flex;
+    justify-content: space-between;
+}
+
+.step-indicator {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.step-indicator.active {
+    background: #ffd700;
+    color: #333;
+}
+
+.step-indicator.completed {
+    background: #28a745;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .hero-title { font-size: 2rem; }
+    .value-props { grid-template-columns: 1fr; }
+    .starter-texts { grid-template-columns: 1fr; }
+    .permission-setup, .voice-calibration, .text-selection { padding: 30px 20px; }
+}
+</style>
+
+<script>
+let currentStep = 1;
+let selectedText = null;
+let microphonePermission = false;
+
+function nextStep() {
+    if (currentStep < 4) {
+        document.getElementById(`step-${currentStep}`).classList.remove('active');
+        currentStep++;
+        document.getElementById(`step-${currentStep}`).classList.add('active');
+        updateProgress();
+    }
+}
+
+function updateProgress() {
+    const progressFill = document.getElementById('progress-fill');
+    const progressPercent = (currentStep / 4) * 100;
+    progressFill.style.width = progressPercent + '%';
+    
+    // Update step indicators
+    document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+        const stepNum = index + 1;
+        if (stepNum < currentStep) {
+            indicator.classList.add('completed');
+            indicator.classList.remove('active');
+        } else if (stepNum === currentStep) {
+            indicator.classList.add('active');
+            indicator.classList.remove('completed');
+        } else {
+            indicator.classList.remove('active', 'completed');
+        }
+    });
+}
+
+async function requestMicrophonePermission() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        microphonePermission = true;
+        
+        // Stop the stream immediately
+        stream.getTracks().forEach(track => track.stop());
+        
+        document.getElementById('permission-status').innerHTML = `
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> Microphone access granted!
+            </div>
+        `;
+        
+        setTimeout(() => nextStep(), 1500);
+        
+    } catch (error) {
+        document.getElementById('permission-status').innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> 
+                Microphone access denied. You can still use the app, but speech recognition won't work.
+                <button class="btn btn-sm btn-outline-primary mt-2" onclick="nextStep()">
+                    Continue Anyway
+                </button>
+            </div>
+        `;
+    }
+}
+
+function startCalibration() {
+    // This would integrate with your speech recognition system
+    document.getElementById('calibration-feedback').style.display = 'block';
+    
+    // Simulate calibration process
+    setTimeout(() => {
+        document.getElementById('calibration-feedback').innerHTML = `
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> Voice calibration complete!
+            </div>
+        `;
+        setTimeout(() => nextStep(), 1500);
+    }, 3000);
+}
+
+function skipCalibration() {
+    nextStep();
+}
+
+function selectText(textType) {
+    // Remove previous selection
+    document.querySelectorAll('.text-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Select new text
+    event.target.closest('.text-card').classList.add('selected');
+    selectedText = textType;
+    document.getElementById('start-practicing').disabled = false;
+}
+
+function showUploadOption() {
+    // This would show an upload dialog
+    alert('Upload functionality would be implemented here');
+}
+
+function startPracticing() {
+    if (selectedText) {
+        // Redirect to practice page
+        window.location.href = `/practice/${selectedText}/`;
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateProgress();
+});
+</script>
+{% endblock %}

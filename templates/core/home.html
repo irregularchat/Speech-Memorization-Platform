@@ -221,10 +221,87 @@ function uploadCustomText() {
 }
 
 function saveCustomText() {
-    // This would integrate with Django form handling
-    // For now, show a placeholder message
-    alert('Custom text upload feature will be implemented in the next phase of development.');
-    bootstrap.Modal.getInstance(document.getElementById('uploadTextModal')).hide();
+    // Get form data
+    const title = document.getElementById('textTitle').value.trim();
+    const content = document.getElementById('textContent').value.trim();
+    const description = document.getElementById('textDescription').value.trim();
+    const difficulty = document.getElementById('textDifficulty').value;
+    const timeLimit = document.getElementById('textTimeLimit').value;
+    
+    // Validate required fields
+    if (!title || !content) {
+        alert('Please fill in the title and content fields.');
+        return;
+    }
+    
+    // Prepare data for submission
+    const formData = {
+        title: title,
+        content: content,
+        description: description,
+        difficulty: difficulty,
+        time_limit: timeLimit ? parseInt(timeLimit) : null,
+        is_public: false
+    };
+    
+    // Show loading state
+    const saveButton = document.querySelector('#uploadTextModal .btn-primary');
+    const originalText = saveButton.textContent;
+    saveButton.textContent = 'Saving...';
+    saveButton.disabled = true;
+    
+    // Submit via AJAX
+    fetch('/api/texts/create/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Success - redirect to the new text
+            window.location.href = data.redirect_url;
+        } else {
+            // Show error messages
+            let errorMessage = 'Error creating text: ';
+            if (data.errors) {
+                for (const field in data.errors) {
+                    errorMessage += '\n' + field + ': ' + data.errors[field].join(', ');
+                }
+            } else if (data.message) {
+                errorMessage += data.message;
+            }
+            alert(errorMessage);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving the text. Please try again.');
+    })
+    .finally(() => {
+        // Reset button state
+        saveButton.textContent = originalText;
+        saveButton.disabled = false;
+    });
 }
+
+// Add CSRF token to the modal
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('uploadTextModal');
+    if (modal) {
+        // Add CSRF token to the modal
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (!csrfToken) {
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = 'csrfmiddlewaretoken';
+            tokenInput.value = '{{ csrf_token }}';
+            modal.appendChild(tokenInput);
+        }
+    }
+});
 </script>
 {% endblock %}
