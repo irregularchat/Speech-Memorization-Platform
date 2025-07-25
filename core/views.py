@@ -242,5 +242,8 @@ def health_check(request):
     """Health check endpoint for Google Cloud Run"""
     return JsonResponse({
         'status': 'healthy',
-        'service': 'speech-memorization-platform'
+        'service': 'speech-memorization-platform',
+        'message': 'Speech Memorization Platform for Military Creeds',
+        'features': ['Military Creeds', 'Speech Practice', 'Real-time Feedback', 'Progress Tracking', 'Spaced Repetition'],
+        'version': '2.0.0'
     })
