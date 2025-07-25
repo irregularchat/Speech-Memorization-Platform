@@ -1,0 +1,25 @@
+# Minimal requirements for cloud deployment
+# Core Django
+Django==5.2.4
+python-decouple==3.8
+
+# Database
+psycopg2-binary==2.9.9
+dj-database-url==3.0.1
+
+# Web serving
+gunicorn==23.0.0
+whitenoise[brotli]==6.8.2
+
+# Google Cloud Services
+google-cloud-speech==2.33.0
+
+# AI processing  
+openai==1.59.3
+
+# Core utilities
+requests==2.32.4
+python-dateutil==2.9.0.post0
+
+# Basic numpy (required by Django and other packages)
+numpy==1.26.4

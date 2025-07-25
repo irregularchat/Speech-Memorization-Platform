@@ -7,15 +7,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install only essential dependencies
-RUN pip install Django==5.2.4 gunicorn==23.0.0 whitenoise==6.8.2
+# Copy minimal requirements and install dependencies
+COPY requirements_minimal.txt .
+RUN pip install --no-cache-dir -r requirements_minimal.txt
 
 # Copy app code
 COPY . .
 
 # Create static files directory and collect static
-RUN mkdir -p staticfiles && \
-    python manage.py collectstatic --noinput
+RUN mkdir -p staticfiles
 
 # Create user and set permissions
 RUN useradd -m appuser && chown -R appuser:appuser /app

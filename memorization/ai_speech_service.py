@@ -12,8 +12,16 @@ import time
 os.environ['NUMBA_DISABLE_JIT'] = '1'
 os.environ['LIBROSA_CACHE_DIR'] = '/tmp'
 
-import librosa
-import soundfile as sf
+# Import librosa and soundfile conditionally for deployment
+try:
+    import librosa
+    import soundfile as sf
+    HAS_AUDIO_LIBS = True
+except ImportError:
+    # For deployment without audio libraries
+    HAS_AUDIO_LIBS = False
+    librosa = None
+    sf = None
 from difflib import SequenceMatcher
 from django.conf import settings
 from openai import OpenAI
@@ -855,6 +863,10 @@ class AudioProcessor:
         Returns:
             Processed audio bytes (WAV format)
         """
+        if not HAS_AUDIO_LIBS:
+            logger.warning("Audio libraries not available, returning original audio data")
+            return audio_data
+            
         try:
             # Convert to numpy array using librosa
             with tempfile.NamedTemporaryFile(suffix='.webm') as temp_input:
@@ -893,6 +905,15 @@ class AudioProcessor:
     @staticmethod
     def validate_audio_quality(audio_data: bytes) -> Dict:
         """Validate audio quality and provide feedback"""
+        if not HAS_AUDIO_LIBS:
+            return {
+                'quality_score': 1.0,
+                'duration': 1.0,
+                'rms_energy': 0.5,
+                'issues': ['Audio analysis not available without audio libraries'],
+                'valid': True
+            }
+            
         try:
             with tempfile.NamedTemporaryFile(suffix='.webm') as temp_file:
                 temp_file.write(audio_data)

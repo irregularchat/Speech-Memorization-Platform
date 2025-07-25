@@ -1,7 +1,7 @@
 steps:
-  # Build the container image using Dockerfile.simple for faster builds
+  # Build the container image using minimal Dockerfile
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-f', 'Dockerfile.simple', '-t', 'gcr.io/$PROJECT_ID/speech-memorization:latest', '.']
+    args: ['build', '-f', 'Dockerfile.minimal', '-t', 'gcr.io/$PROJECT_ID/speech-memorization:latest', '.']
   
   # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
