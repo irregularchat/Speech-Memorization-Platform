@@ -32,4 +32,4 @@ handlers:
   script: auto
   secure: always
 
-entrypoint: gunicorn speech_memorization.wsgi:application --bind :$PORT --workers 1 --timeout 120
+entrypoint: bash startup.sh gunicorn speech_memorization.wsgi:application --bind :$PORT --workers 1 --timeout 120
