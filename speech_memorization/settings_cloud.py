@@ -13,7 +13,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Security settings
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-in-production')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
+# Allow all hosts for Cloud Run (since we don't know the exact URL until deployment)
+# This overrides any other ALLOWED_HOSTS setting completely
+ALLOWED_HOSTS = ['*']
+
+# Force logging and print to ensure visibility
+import logging
+import sys
+
+# Force immediate output
+print("=== CLOUD SETTINGS LOADING ===", file=sys.stderr, flush=True)
+print(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}", file=sys.stderr, flush=True)
+print(f"DEBUG: {DEBUG}", file=sys.stderr, flush=True)
+print("=== CLOUD SETTINGS LOADED ===", file=sys.stderr, flush=True)
+
+# Also add to logging
+logger = logging.getLogger(__name__)
+logger.error(f"CLOUD SETTINGS: ALLOWED_HOSTS set to: {ALLOWED_HOSTS}")
+logger.error(f"CLOUD SETTINGS: DEBUG set to: {DEBUG}")
 
 # Google Cloud specific settings
 USE_CLOUD_SQL_AUTH_PROXY = config('USE_CLOUD_SQL_AUTH_PROXY', default=False, cast=bool)
@@ -74,11 +91,21 @@ if DATABASE_URL:
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
 else:
-    # Fallback to SQLite for local development
+    # Fallback to SQLite for local development and Cloud Run
+    import os
+    
+    # Use /tmp directory for Cloud Run to avoid read-only file system issues
+    if os.environ.get('PORT'):  # Cloud Run sets PORT
+        db_name = '/tmp/db.sqlite3'
+        # Ensure /tmp directory exists
+        os.makedirs('/tmp', exist_ok=True)
+    else:
+        db_name = BASE_DIR / 'db.sqlite3'
+    
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': db_name,
         }
     }
 
@@ -139,6 +166,21 @@ OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
 # Google Cloud Speech Configuration
 GOOGLE_CLOUD_PROJECT_ID = config('GOOGLE_CLOUD_PROJECT_ID', default='')
 
+# Google Cloud authentication
+if not DEBUG:
+    # In production, use default credentials (service account)
+    import google.auth
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        credentials, project = google.auth.default()
+        GOOGLE_CLOUD_PROJECT_ID = project or GOOGLE_CLOUD_PROJECT_ID
+    except Exception as e:
+        logger.warning(f"Could not load Google Cloud credentials: {e}")
+
+# Enable Google Cloud Speech API
+GOOGLE_SPEECH_ENABLED = bool(GOOGLE_CLOUD_PROJECT_ID)
+
 # Use in-memory cache for App Engine
 CACHES = {
     'default': {
@@ -169,7 +211,9 @@ if not DEBUG:
     
     # CSRF settings for Cloud Run
     CSRF_TRUSTED_ORIGINS = [
-        f"https://{host}" for host in ALLOWED_HOSTS if host not in ['localhost', '127.0.0.1', '*']
+        'https://*.run.app',  # Allow all Cloud Run domains
+        'https://speech-memorization-496146455129.us-central1.run.app',
+        'https://speech-memorization-nesvf2duwa-uc.a.run.app'
     ]
 
 # Logging configuration for Google Cloud

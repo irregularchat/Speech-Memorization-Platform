@@ -1,26 +1,51 @@
 FROM python:3.11-slim
 
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=8080 \
-    DJANGO_SETTINGS_MODULE=speech_memorization.settings_minimal
+    PORT=8080
 
+# Set work directory
 WORKDIR /app
 
-# Install only essential dependencies
-RUN pip install Django==5.2.4 gunicorn==23.0.0 whitenoise==6.8.2
+# Install minimal system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy app code
+# Copy minimal requirements
+COPY requirements.txt .
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir gunicorn google-cloud-speech
+
+# Copy application code
 COPY . .
 
-# Create static files directory and collect static
-RUN mkdir -p staticfiles && \
-    python manage.py collectstatic --noinput
+# Create necessary directories
+RUN mkdir -p staticfiles media logs
 
-# Create user and set permissions
+# Set environment for Django
+ENV DJANGO_SETTINGS_MODULE=speech_memorization.settings
+
+# Create a minimal .env file to avoid errors
+RUN echo "DEBUG=False" > .env && \
+    echo "SECRET_KEY=build-time-key" >> .env && \
+    echo "DATABASE_URL=sqlite:///tmp/build.db" >> .env
+
+# Collect static files
+RUN python manage.py collectstatic --noinput --settings=speech_memorization.settings
+
+# Set proper permissions
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
+# Expose port
 EXPOSE 8080
 
-CMD ["gunicorn", "speech_memorization.wsgi:application", "--bind", "0.0.0.0:8080", "--workers", "1"]
+# Make startup script executable
+RUN chmod +x startup.sh
+
+# Run the application using the robust startup script
+CMD ["./startup.sh", "gunicorn", "speech_memorization.wsgi:application", "--bind", "0.0.0.0:8080", "--workers", "1", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-"]

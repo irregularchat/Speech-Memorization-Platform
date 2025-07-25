@@ -21,7 +21,7 @@ librosa==0.10.2.post1
 soundfile==0.12.1
 speechrecognition==3.12.0
 
-# Audio processing (optional - may need system dependencies)
+# Audio processing for voice recording (may fail on some systems)
 # pyaudio==0.2.14
 
 # Web serving
