@@ -66,14 +66,30 @@ def text_list(request):
 @login_required
 def create_text(request):
     """Create a new text"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if request.method == 'POST':
         form = TextForm(request.POST)
         if form.is_valid():
-            text = form.save(commit=False)
-            text.created_by = request.user
-            text.save()
-            messages.success(request, f'Text "{text.title}" created successfully!')
-            return redirect('practice_text', text_id=text.id)
+            try:
+                # Use database transaction for atomic operation
+                from django.db import transaction
+                with transaction.atomic():
+                    text = form.save(commit=False)
+                    text.created_by = request.user
+                    text.save()
+                    
+                    logger.info(f"Successfully created text {text.id}: {text.title} for user {request.user.username}")
+                    messages.success(request, f'Text "{text.title}" created successfully!')
+                    return redirect('practice_text', text_id=text.id)
+                    
+            except Exception as e:
+                logger.error(f"Database error creating text: {str(e)}")
+                messages.error(request, 'An error occurred while saving the text. Please try again.')
+        else:
+            logger.warning(f"Form validation failed: {form.errors}")
+            messages.error(request, 'Please check your input and try again.')
     else:
         form = TextForm()
     
@@ -129,6 +145,9 @@ def delete_text(request, text_id):
 @login_required
 def upload_text_file(request):
     """Upload a text file and create a new text"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if request.method == 'POST':
         form = TextFileUploadForm(request.POST, request.FILES)
         if form.is_valid():
@@ -143,19 +162,28 @@ def upload_text_file(request):
             # Create text object
             title = form.cleaned_data.get('title') or uploaded_file.name.replace('.txt', '')
             
-            text = Text.objects.create(
-                title=title,
-                content=content.strip(),
-                description=form.cleaned_data.get('description', ''),
-                difficulty=form.cleaned_data.get('difficulty', 'beginner'),
-                tags=form.cleaned_data.get('tags', ''),
-                time_limit=form.cleaned_data.get('time_limit'),
-                is_public=form.cleaned_data.get('is_public', False),
-                created_by=request.user
-            )
-            
-            messages.success(request, f'Text "{text.title}" uploaded successfully!')
-            return redirect('practice_text', text_id=text.id)
+            try:
+                # Use database transaction for atomic operation
+                from django.db import transaction
+                with transaction.atomic():
+                    text = Text.objects.create(
+                        title=title,
+                        content=content.strip(),
+                        description=form.cleaned_data.get('description', ''),
+                        difficulty=form.cleaned_data.get('difficulty', 'beginner'),
+                        tags=form.cleaned_data.get('tags', ''),
+                        time_limit=form.cleaned_data.get('time_limit'),
+                        is_public=form.cleaned_data.get('is_public', False),
+                        created_by=request.user
+                    )
+                    
+                    logger.info(f"Successfully uploaded text {text.id}: {text.title} for user {request.user.username}")
+                    messages.success(request, f'Text "{text.title}" uploaded successfully!')
+                    return redirect('practice_text', text_id=text.id)
+                    
+            except Exception as e:
+                logger.error(f"Database error uploading text: {str(e)}")
+                messages.error(request, 'An error occurred while saving the uploaded text. Please try again.')
     else:
         form = TextFileUploadForm()
     
@@ -171,47 +199,76 @@ def upload_text_file(request):
 @require_http_methods(["POST"])
 def create_text_ajax(request):
     """AJAX endpoint for creating texts"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         data = json.loads(request.body)
+        logger.info(f"Creating text for user {request.user.username}: {data.get('title', 'Untitled')}")
+        
+        # Validate required fields
+        if not data.get('title') or not data.get('content'):
+            return JsonResponse({
+                'success': False,
+                'message': 'Title and content are required'
+            })
         
         # Create form with AJAX data
         form_data = {
-            'title': data.get('title', ''),
-            'content': data.get('content', ''),
-            'description': data.get('description', ''),
+            'title': data.get('title', '').strip(),
+            'content': data.get('content', '').strip(),
+            'description': data.get('description', '').strip(),
             'difficulty': data.get('difficulty', 'beginner'),
-            'tags': data.get('tags', ''),
+            'tags': data.get('tags', '').strip(),
             'time_limit': data.get('time_limit'),
             'is_public': data.get('is_public', False)
         }
         
+        # Validate form data
         form = TextForm(form_data)
         if form.is_valid():
-            text = form.save(commit=False)
-            text.created_by = request.user
-            text.save()
-            
-            return JsonResponse({
-                'success': True,
-                'message': f'Text "{text.title}" created successfully!',
-                'text_id': text.id,
-                'redirect_url': f'/practice/{text.id}/'
-            })
+            try:
+                # Use database transaction for atomic operation
+                from django.db import transaction
+                with transaction.atomic():
+                    text = form.save(commit=False)
+                    text.created_by = request.user
+                    text.save()
+                    
+                    logger.info(f"Successfully created text {text.id}: {text.title}")
+                    
+                    return JsonResponse({
+                        'success': True,
+                        'message': f'Text "{text.title}" created successfully!',
+                        'text_id': text.id,
+                        'redirect_url': f'/practice/{text.id}/'
+                    })
+                    
+            except Exception as db_error:
+                logger.error(f"Database error creating text: {str(db_error)}")
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Database error occurred while saving. Please try again.'
+                })
         else:
+            logger.warning(f"Form validation failed: {form.errors}")
             return JsonResponse({
                 'success': False,
-                'errors': form.errors
+                'errors': form.errors,
+                'message': 'Please check your input and try again.'
             })
     
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as json_error:
+        logger.error(f"JSON decode error: {str(json_error)}")
         return JsonResponse({
             'success': False,
-            'message': 'Invalid JSON data'
+            'message': 'Invalid request format'
         })
     except Exception as e:
+        logger.error(f"Unexpected error in create_text_ajax: {str(e)}")
         return JsonResponse({
             'success': False,
-            'message': str(e)
+            'message': 'An unexpected error occurred. Please try again.'
         })
 
 

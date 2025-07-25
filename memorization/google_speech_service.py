@@ -13,11 +13,17 @@ from typing import Dict, Optional, Callable, Any
 import json
 
 try:
-    import pyaudio
     from google.cloud import speech
     HAS_GOOGLE_SPEECH = True
 except ImportError:
     HAS_GOOGLE_SPEECH = False
+
+try:
+    import pyaudio
+    HAS_PYAUDIO = True
+except ImportError:
+    HAS_PYAUDIO = False
+    pyaudio = None
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +50,10 @@ class GoogleSpeechStreamingService:
             max_alternatives: Maximum number of recognition alternatives
         """
         if not HAS_GOOGLE_SPEECH:
-            raise ImportError("Google Cloud Speech library not available. Install with: pip install google-cloud-speech pyaudio")
+            raise ImportError("Google Cloud Speech library not available. Install with: pip install google-cloud-speech")
+        
+        if not HAS_PYAUDIO:
+            logger.warning("PyAudio not available. Audio recording features will be disabled. Install with: pip install pyaudio")
         
         self.language_code = language_code
         self.interim_results = interim_results
@@ -74,16 +83,32 @@ class GoogleSpeechStreamingService:
     def _initialize_client(self):
         """Initialize Google Cloud Speech client"""
         try:
-            # Check for authentication
+            # Check for authentication multiple ways
             credentials_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
             project_id = os.environ.get('GOOGLE_CLOUD_PROJECT_ID')
             
-            if not credentials_path and not project_id:
-                logger.warning("Google Cloud credentials not configured. Set GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_CLOUD_PROJECT_ID")
-                return
+            # Try to get default credentials (works in Cloud Run with service account)
+            try:
+                import google.auth
+                credentials, detected_project = google.auth.default(
+                    scopes=['https://www.googleapis.com/auth/cloud-platform']
+                )
+                project_id = project_id or detected_project
+                logger.info(f"Using Google Cloud default credentials for project: {project_id}")
+            except Exception as auth_error:
+                logger.warning(f"Could not get default credentials: {auth_error}")
+                
+                if not credentials_path and not project_id:
+                    logger.error("No Google Cloud credentials found. Set GOOGLE_APPLICATION_CREDENTIALS environment variable or run in Google Cloud environment")
+                    return
             
-            self.client = speech.SpeechClient()
-            logger.info("Google Cloud Speech client initialized successfully")
+            # Initialize client
+            if project_id:
+                self.client = speech.SpeechClient()
+                logger.info(f"Google Cloud Speech client initialized successfully for project: {project_id}")
+            else:
+                logger.error("No Google Cloud project ID available")
+                return
             
         except Exception as e:
             logger.error(f"Failed to initialize Google Cloud Speech client: {str(e)}", exc_info=True)
@@ -104,14 +129,37 @@ class GoogleSpeechStreamingService:
     
     def _record_audio(self):
         """Continuously read audio from microphone and push to buffer"""
+        pa = None
+        stream = None
         try:
+            # Check if pyaudio is available
+            if not HAS_PYAUDIO or not hasattr(pyaudio, 'PyAudio'):
+                raise ImportError("PyAudio not properly installed")
+            
             pa = pyaudio.PyAudio()
+            
+            # Check for available input devices
+            device_count = pa.get_device_count()
+            input_device = None
+            for i in range(device_count):
+                device_info = pa.get_device_info_by_index(i)
+                if device_info['maxInputChannels'] > 0:
+                    input_device = i
+                    break
+            
+            if input_device is None:
+                raise RuntimeError("No audio input device found")
+            
+            logger.info(f"Using audio input device: {pa.get_device_info_by_index(input_device)['name']}")
+            
             stream = pa.open(
                 format=pyaudio.paInt16,
                 channels=1,
                 rate=RATE,
                 input=True,
+                input_device_index=input_device,
                 frames_per_buffer=CHUNK,
+                stream_callback=None  # Use blocking mode for better reliability
             )
             
             logger.info("🎙️ Audio recording started")
@@ -120,25 +168,35 @@ class GoogleSpeechStreamingService:
             
             while self.is_recording:
                 try:
+                    # Use blocking read with timeout
                     data = stream.read(CHUNK, exception_on_overflow=False)
-                    if self.audio_buffer:
+                    if self.audio_buffer and data:
                         self.audio_buffer.put(data)
                 except Exception as e:
-                    logger.error(f"Error reading audio: {str(e)}", exc_info=True)
-                    break
+                    logger.error(f"Error reading audio chunk: {str(e)}")
+                    # Continue recording unless it's a critical error
+                    if "Stream" in str(e) or "Device" in str(e):
+                        break
             
-            stream.stop_stream()
-            stream.close()
-            pa.terminate()
-            
-            logger.info("🛑 Audio recording stopped")
-            if self.on_speech_end:
-                self.on_speech_end()
-                
         except Exception as e:
-            logger.error(f"Audio recording error: {str(e)}", exc_info=True)
+            logger.error(f"Audio recording initialization error: {str(e)}", exc_info=True)
             if self.on_error:
                 self.on_error(f"Audio recording failed: {str(e)}")
+        
+        finally:
+            # Clean up audio resources
+            try:
+                if stream:
+                    stream.stop_stream()
+                    stream.close()
+                if pa:
+                    pa.terminate()
+                
+                logger.info("🛑 Audio recording stopped and cleaned up")
+                if self.on_speech_end:
+                    self.on_speech_end()
+            except Exception as cleanup_error:
+                logger.error(f"Error during audio cleanup: {cleanup_error}")
     
     def _stream_generator(self):
         """Generate audio chunks for the API"""
@@ -294,6 +352,10 @@ class GoogleSpeechStreamingService:
     def is_available(self) -> bool:
         """Check if Google Cloud Speech service is available"""
         return HAS_GOOGLE_SPEECH and self.client is not None
+    
+    def is_audio_available(self) -> bool:
+        """Check if audio recording is available"""
+        return HAS_PYAUDIO and self.is_available()
 
 
 class GoogleSpeechBatchService:

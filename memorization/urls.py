@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views, practice_views, ai_practice_views, enhanced_practice_views
 # from . import streaming_views  # Temporarily disabled due to missing channels dependency
+from .speech_health_check import speech_health_view
 
 urlpatterns = [
     # Text management
@@ -42,6 +43,9 @@ urlpatterns = [
     # path('api/streaming/start/', streaming_views.start_streaming_session, name='start_streaming_session'),
     # path('api/streaming/stop/', streaming_views.stop_streaming_session, name='stop_streaming_session'),
     # path('api/streaming/check-availability/', streaming_views.check_streaming_availability, name='check_streaming_availability'),
+    
+    # Speech API health check
+    path('api/speech/health/', speech_health_view, name='speech_health_check'),
     
     # Enhanced practice API endpoints
     path('api/enhanced/start-word-reveal/', enhanced_practice_views.start_word_reveal_session, name='start_word_reveal_session'),

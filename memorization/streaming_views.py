@@ -288,12 +288,17 @@ def start_streaming_session(request):
             if not speech_service.is_available():
                 return JsonResponse({
                     'success': False,
-                    'error': 'Google Cloud Speech service not available'
+                    'error': 'Google Cloud Speech service not available',
+                    'details': 'Ensure GOOGLE_CLOUD_PROJECT_ID is set and Speech API is enabled',
+                    'fallback_available': True  # Web Speech API can be used as fallback
                 })
         except Exception as e:
+            logger.error(f"Speech service initialization error: {str(e)}")
             return JsonResponse({
                 'success': False,
-                'error': f'Speech service initialization failed: {str(e)}'
+                'error': f'Speech service initialization failed: {str(e)}',
+                'details': 'Check Google Cloud credentials and Speech API permissions',
+                'fallback_available': True
             })
         
         # Store session info
