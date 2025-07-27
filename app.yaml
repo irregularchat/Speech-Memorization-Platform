@@ -1,35 +1,11 @@
+# Cloud Run deployment configuration
 runtime: python311
 
 env_variables:
-  DJANGO_SETTINGS_MODULE: speech_memorization.settings_minimal
-  DEBUG: False
-  GOOGLE_CLOUD_PROJECT_ID: speech-memorization
-  ALLOWED_HOSTS: "*"
+  DJANGO_SETTINGS_MODULE: "speech_memorization.settings_minimal"
+  DEBUG: "True"
+  ALLOWED_HOSTS: "speech-memorization-496146455129.us-central1.run.app,.run.app,*"
 
 automatic_scaling:
   min_instances: 0
-  max_instances: 10
-  target_cpu_utilization: 0.6
-
-resources:
-  cpu: 1
-  memory_gb: 2
-  disk_size_gb: 10
-
-handlers:
-# Static files
-- url: /static
-  static_dir: staticfiles
-  secure: always
-
-# Media files  
-- url: /media
-  static_dir: media
-  secure: always
-
-# All other URLs go to Django
-- url: /.*
-  script: auto
-  secure: always
-
-entrypoint: bash startup.sh gunicorn speech_memorization.wsgi:application --bind :$PORT --workers 1 --timeout 120
+  max_instances: 3
