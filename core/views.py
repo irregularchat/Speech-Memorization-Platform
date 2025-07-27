@@ -356,6 +356,7 @@ def about(request):
     return render(request, 'core/about.html')
 
 
+@csrf_exempt
 def demo_login(request):
     """Demo login view that bypasses database authentication."""
     if request.method == 'POST':
@@ -399,3 +400,28 @@ def health_check(request):
         'features': ['Military Creeds', 'Speech Practice', 'Real-time Feedback', 'Progress Tracking', 'Spaced Repetition'],
         'version': '2.0.0'
     })
+
+
+def csrf_debug_view(request):
+    """Debug view to check CSRF configuration"""
+    from django.middleware.csrf import get_token
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    csrf_token = get_token(request)
+    
+    debug_info = {
+        'csrf_token': csrf_token,
+        'session_key': request.session.session_key,
+        'cookies': dict(request.COOKIES),
+        'method': request.method,
+        'is_secure': request.is_secure(),
+        'host': request.get_host(),
+        'origin': request.META.get('HTTP_ORIGIN'),
+        'referer': request.META.get('HTTP_REFERER'),
+        'user_agent': request.META.get('HTTP_USER_AGENT'),
+        'settings_debug': getattr(request, 'settings', {}).get('DEBUG', 'unknown'),
+    }
+    
+    logger.info(f"CSRF Debug Info: {debug_info}")
+    return JsonResponse(debug_info)

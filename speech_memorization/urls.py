@@ -39,6 +39,9 @@ urlpatterns = [
     # Health check for Google Cloud Run
     path('health/', core_views.health_check, name='health_check'),
     
+    # CSRF Debug endpoint
+    path('csrf-debug/', core_views.csrf_debug_view, name='csrf_debug'),
+    
     # AJAX endpoints
     path('api/update-mastery/', core_views.update_mastery_level, name='update_mastery_level'),
     path('api/start-session/', core_views.start_practice_session, name='start_practice_session'),
