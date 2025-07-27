@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Security settings
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-in-production')
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
 
 # Google Cloud specific settings
@@ -169,7 +169,8 @@ if not DEBUG:
     
     # CSRF settings for Cloud Run
     CSRF_TRUSTED_ORIGINS = [
-        f"https://{host}" for host in ALLOWED_HOSTS if host not in ['localhost', '127.0.0.1', '*']
+        'https://speech-memorization-496146455129.us-central1.run.app',
+        'https://*.run.app',
     ]
 
 # Logging configuration for Google Cloud

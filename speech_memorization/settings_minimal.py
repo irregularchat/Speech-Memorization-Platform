@@ -12,9 +12,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-minimal-for-testing')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+DEBUG = True  # Enable debug to see detailed CSRF errors
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    'speech-memorization-496146455129.us-central1.run.app',
+    '.run.app',
+    'localhost',
+    '127.0.0.1',
+    '*'
+]
+
+# CRITICAL CSRF FIX
+CSRF_TRUSTED_ORIGINS = [
+    'https://speech-memorization-496146455129.us-central1.run.app',
+    'https://*.run.app',
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -39,6 +51,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'core.middleware.CSRFDebugMiddleware',  # Debug CSRF issues
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
