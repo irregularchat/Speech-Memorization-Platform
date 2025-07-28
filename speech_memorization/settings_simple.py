@@ -40,7 +40,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'speech_memorization.urls'
+ROOT_URLCONF = 'speech_memorization.urls_test'
 
 TEMPLATES = [
     {
