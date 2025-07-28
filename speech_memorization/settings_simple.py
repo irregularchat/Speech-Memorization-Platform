@@ -17,8 +17,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-# Application definition - minimal apps to avoid database issues
+# Application definition - minimal apps with auth for URL compatibility
 INSTALLED_APPS = [
+    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
