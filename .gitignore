@@ -179,6 +179,16 @@ docker-compose*
 # Credentials and environment files
 .env.*
 google-cloud-credentials.json
+service-account-key.json
+*-service-account.json
+
+# Deployment scripts with sensitive data
+force_deploy.sh
+deploy_*.sh
+
+# Testing artifacts
+cookies.txt
+*.cookie
 
 # Editor/IDE
 .vscode/

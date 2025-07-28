@@ -7,6 +7,15 @@ from pathlib import Path
 from decouple import config, Csv
 import dj_database_url
 
+# Import secrets utility for Cloud Run deployment
+try:
+    from utils.secrets import populate_env_from_secrets
+    # Populate environment variables from Secret Manager on Cloud Run
+    populate_env_from_secrets()
+except ImportError:
+    # utils.secrets not available, use environment variables directly
+    pass
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -68,19 +77,21 @@ TEMPLATES = [
 WSGI_APPLICATION = 'speech_memorization.wsgi.application'
 
 # Database configuration for Google Cloud
-DATABASE_URL = config('DATABASE_URL', default='')
-if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+DATABASE_URL = config('DATABASE_URL', default='sqlite:///db.sqlite3')
+
+# Always use SQLite for this deployment to avoid PostgreSQL dependency issues
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-else:
-    # Fallback to SQLite for local development
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
+
+# If you want to use PostgreSQL in the future, uncomment this:
+# if DATABASE_URL and not DATABASE_URL.startswith('sqlite'):
+#     DATABASES = {
+#         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+#     }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
