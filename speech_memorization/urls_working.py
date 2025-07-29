@@ -42,19 +42,38 @@ urlpatterns = [
     path('api/complete-session/', core_views.complete_practice_session, name='complete_practice_session'),
 ]
 
-# Only include memorization URLs if the app is properly configured
+# Add memorization URLs with fallbacks for missing views
 try:
-    # Test if memorization app can be imported
-    from memorization import urls as memorization_urls
-    urlpatterns.append(path('practice/', include('memorization.urls')))
+    # Import memorization views if available
+    from memorization import views as memorization_views
+    # Add text management URLs
+    urlpatterns.extend([
+        path('texts/', memorization_views.text_list, name='text_list'),
+        path('texts/create/', memorization_views.create_text, name='create_text'),
+        path('texts/<int:text_id>/', memorization_views.text_detail, name='text_detail'),
+        path('texts/<int:text_id>/edit/', memorization_views.edit_text, name='edit_text'),
+    ])
+    # Include full memorization URLs
+    urlpatterns.append(path('', include('memorization.urls')))
 except ImportError:
-    # Add a fallback practice URL that shows demo content
-    def practice_fallback(request):
+    # Add fallback URLs for text_list and other common references
+    def text_list_fallback(request):
         return JsonResponse({
-            'message': 'Practice features available in demo mode',
-            'note': 'Full practice functionality requires database setup'
+            'message': 'Text management in demo mode',
+            'texts': [
+                {'id': 1, 'title': 'Demo Text 1', 'description': 'Sample memorization text'},
+                {'id': 2, 'title': 'Demo Text 2', 'description': 'Another sample text'},
+            ],
+            'note': 'Full functionality requires database setup'
         })
-    urlpatterns.append(path('practice/', practice_fallback, name='practice_fallback'))
+    
+    def text_create_fallback(request):
+        return JsonResponse({'message': 'Text creation available in full deployment'})
+    
+    urlpatterns.extend([
+        path('texts/', text_list_fallback, name='text_list'),
+        path('texts/create/', text_create_fallback, name='create_text'),
+    ])
 
 # Serve media files in development
 if settings.DEBUG:
