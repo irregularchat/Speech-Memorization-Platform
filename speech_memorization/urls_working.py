@@ -52,6 +52,7 @@ try:
         path('texts/create/', memorization_views.create_text, name='create_text'),
         path('texts/<int:text_id>/', memorization_views.text_detail, name='text_detail'),
         path('texts/<int:text_id>/edit/', memorization_views.edit_text, name='edit_text'),
+        path('practice/<int:text_id>/', core_views.practice_text, name='practice_text'),
     ])
     # Include full memorization URLs
     urlpatterns.append(path('', include('memorization.urls')))
@@ -70,9 +71,16 @@ except ImportError:
     def text_create_fallback(request):
         return JsonResponse({'message': 'Text creation available in full deployment'})
     
+    def practice_text_fallback(request, text_id):
+        return JsonResponse({
+            'message': f'Practice mode for text {text_id}',
+            'note': 'Full practice functionality requires database setup'
+        })
+    
     urlpatterns.extend([
         path('texts/', text_list_fallback, name='text_list'),
         path('texts/create/', text_create_fallback, name='create_text'),
+        path('practice/<int:text_id>/', practice_text_fallback, name='practice_text'),
     ])
 
 # Serve media files in development
