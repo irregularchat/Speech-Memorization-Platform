@@ -41,6 +41,10 @@ def demo_login_required(view_func):
 def home(request):
     """Home page view - main memorization interface."""
     
+    # Add demo authentication status to context
+    is_demo_authenticated = request.session.get('demo_user', False)
+    demo_username = request.session.get('demo_username', 'demo')
+    
     # Demo data for when database is not available
     demo_texts = [
         {
@@ -107,14 +111,18 @@ def home(request):
             context = {
                 'texts': demo_texts,
                 'is_demo': True,
-                'demo_message': 'Demo mode - database not available'
+                'demo_message': 'Demo mode - database not available',
+                'is_demo_authenticated': is_demo_authenticated,
+                'demo_username': demo_username,
             }
     else:
         # Use demo data
         context = {
             'texts': demo_texts,
             'is_demo': True,
-            'demo_message': 'Demo mode - showing sample military creeds'
+            'demo_message': 'Demo mode - showing sample military creeds',
+            'is_demo_authenticated': is_demo_authenticated,
+            'demo_username': demo_username,
         }
     
     return render(request, 'core/home.html', context)

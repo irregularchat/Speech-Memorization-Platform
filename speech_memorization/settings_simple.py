@@ -54,6 +54,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.demo_auth',
             ],
         },
     },
@@ -102,6 +103,14 @@ LOGOUT_REDIRECT_URL = '/'
 CSRF_TRUSTED_ORIGINS = [
     'https://speech-memorization-496146455129.us-central1.run.app',
 ]
+
+# Session configuration for Cloud Run
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_COOKIE_SECURE = True  # HTTPS only
+SESSION_COOKIE_HTTPONLY = True  # Prevent XSS
+SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+SESSION_SAVE_EVERY_REQUEST = True  # Save session on every request
 
 # Cache
 CACHES = {

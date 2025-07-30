@@ -128,10 +128,11 @@
                 </ul>
                 
                 <ul class="navbar-nav">
-                    {% if user.is_authenticated %}
+                    {% if is_authenticated %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user"></i> {{ user.username }}
+                                <i class="fas fa-user"></i> {{ current_username }}
+                                {% if is_demo_authenticated %}<small>(demo)</small>{% endif %}
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{% url 'analytics' %}">My Progress</a></li>
