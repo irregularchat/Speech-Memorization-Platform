@@ -358,12 +358,32 @@ def about(request):
 
 @csrf_exempt
 def demo_login(request):
-    """Demo login view that bypasses database authentication."""
+    """Demo login view that creates/uses a demo user."""
     if request.method == 'POST':
-        # In demo mode, always succeed
+        from django.contrib.auth.models import User
+        from django.contrib.auth import login
+        
+        # Get or create demo user
         username = request.POST.get('username', 'demo')
         
-        # Create a fake session for demo purposes
+        try:
+            # Try to get existing demo user
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            # Create demo user if doesn't exist
+            user = User.objects.create_user(
+                username=username,
+                password='demo123',  # Set a default password
+                email=f'{username}@demo.local'
+            )
+            user.first_name = username.capitalize()
+            user.save()
+        
+        # Log in the user properly
+        user.backend = 'django.contrib.auth.backends.ModelBackend'
+        login(request, user)
+        
+        # Also set demo session for backwards compatibility
         request.session['demo_user'] = True
         request.session['demo_username'] = username
         
@@ -380,7 +400,12 @@ def demo_login(request):
 
 def demo_logout(request):
     """Demo logout view."""
-    # Clear demo session
+    from django.contrib.auth import logout
+    
+    # Logout the user
+    logout(request)
+    
+    # Also clear demo session
     if 'demo_user' in request.session:
         del request.session['demo_user']
     if 'demo_username' in request.session:
