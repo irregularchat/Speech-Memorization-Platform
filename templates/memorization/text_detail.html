@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ text.title }} - Speech Memorization Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1>{{ text.title }}</h1>
+                {% if text.description %}
+                    <p class="lead text-muted">{{ text.description }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-ellipsis-v"></i> Actions
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'practice_text' text.id %}">
+                            <i class="fas fa-play text-success"></i> Standard Practice
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'enhanced_practice_dashboard' text.id %}">
+                            <i class="fas fa-brain text-primary"></i> Enhanced Practice
+                        </a>
+                    </li>
+                    {% if can_edit %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'edit_text' text.id %}">
+                                <i class="fas fa-edit text-primary"></i> Edit
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'duplicate_text' text.id %}">
+                                <i class="fas fa-copy text-info"></i> Duplicate
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'toggle_text_visibility' text.id %}" 
+                               onclick="return confirm('Change visibility of this text?')">
+                                {% if text.is_public %}
+                                    <i class="fas fa-eye-slash text-warning"></i> Make Private
+                                {% else %}
+                                    <i class="fas fa-eye text-success"></i> Make Public
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'delete_text' text.id %}">
+                                <i class="fas fa-trash"></i> Delete
+                            </a>
+                        </li>
+                    {% else %}
+                        <li>
+                            <a class="dropdown-item" href="{% url 'duplicate_text' text.id %}">
+                                <i class="fas fa-copy text-info"></i> Create My Copy
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Text Metadata -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <i class="fas fa-font fa-2x text-primary"></i>
+                                <h5 class="mt-2">{{ text.word_count }}</h5>
+                                <p class="text-muted small">Words</p>
+                            </div>
+                            <div class="col-md-3">
+                                <i class="fas fa-signal fa-2x text-success"></i>
+                                <h5 class="mt-2">{{ text.get_difficulty_display }}</h5>
+                                <p class="text-muted small">Difficulty</p>
+                            </div>
+                            <div class="col-md-3">
+                                {% if text.time_limit %}
+                                    <i class="fas fa-clock fa-2x text-warning"></i>
+                                    <h5 class="mt-2">{{ text.time_limit }} min</h5>
+                                    <p class="text-muted small">Time Limit</p>
+                                {% else %}
+                                    <i class="fas fa-infinity fa-2x text-info"></i>
+                                    <h5 class="mt-2">Unlimited</h5>
+                                    <p class="text-muted small">Time Limit</p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                {% if text.is_public %}
+                                    <i class="fas fa-globe fa-2x text-success"></i>
+                                    <h5 class="mt-2">Public</h5>
+                                {% else %}
+                                    <i class="fas fa-lock fa-2x text-secondary"></i>
+                                    <h5 class="mt-2">Private</h5>
+                                {% endif %}
+                                <p class="text-muted small">Visibility</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                {% if user_progress %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-line"></i> Your Progress</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Mastery Level</span>
+                                <span><strong>{{ user_progress.mastery_percentage }}%</strong></span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-success" 
+                                     style="width: {{ user_progress.mastery_percentage }}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row text-center text-sm">
+                            <div class="col-6">
+                                <strong>{{ user_progress.total_sessions }}</strong><br>
+                                <small class="text-muted">Sessions</small>
+                            </div>
+                            <div class="col-6">
+                                <strong>{{ user_progress.streak_days }}</strong><br>
+                                <small class="text-muted">Day Streak</small>
+                            </div>
+                        </div>
+                        
+                        {% if user_progress.last_practiced %}
+                            <div class="text-center mt-2">
+                                <small class="text-muted">
+                                    Last practiced: {{ user_progress.last_practiced|timesince }} ago
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Tags -->
+                {% if text.tags %}
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-tags"></i> Tags</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for tag in text.get_tags_list %}
+                            <span class="badge bg-primary me-1 mb-1">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Text Content -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4><i class="fas fa-file-text"></i> Full Text</h4>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'practice_text' text.id %}" class="btn btn-success">
+                                <i class="fas fa-play"></i> Standard Practice
+                            </a>
+                            <a href="{% url 'enhanced_practice_dashboard' text.id %}" class="btn btn-primary">
+                                <i class="fas fa-brain"></i> Enhanced Practice
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-display">
+                            {{ text.content|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Text Info -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row text-center text-muted small">
+                            <div class="col-md-3">
+                                <i class="fas fa-user"></i>
+                                Created by {{ text.created_by.username }}
+                            </div>
+                            <div class="col-md-3">
+                                <i class="fas fa-calendar-plus"></i>
+                                {{ text.created_at|date:"F d, Y" }}
+                            </div>
+                            <div class="col-md-3">
+                                <i class="fas fa-calendar-edit"></i>
+                                Updated {{ text.updated_at|date:"F d, Y" }}
+                            </div>
+                            <div class="col-md-3">
+                                <i class="fas fa-id-badge"></i>
+                                Text ID: {{ text.id }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}Texts - Speech Memorization Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="fas fa-book"></i> Text Library</h1>
+                <p class="lead">Browse and manage memorization texts</p>
+            </div>
+            <div>
+                {% if user.is_authenticated %}
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'create_text' %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Create Text
+                        </a>
+                        <a href="{% url 'upload_text_file' %}" class="btn btn-outline-success">
+                            <i class="fas fa-upload"></i> Upload File
+                        </a>
+                    </div>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-success">
+                        <i class="fas fa-sign-in-alt"></i> Login to Add Texts
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Public Texts -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3><i class="fas fa-globe"></i> Public Texts</h3>
+            </div>
+            <div class="card-body">
+                {% if public_texts %}
+                    <div class="row">
+                        {% for text in public_texts %}
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ text.title }}</h5>
+                                        <p class="card-text">{{ text.description|truncatechars:120 }}</p>
+                                        
+                                        <div class="row text-center text-muted small mb-3">
+                                            <div class="col-4">
+                                                <i class="fas fa-font"></i><br>
+                                                {{ text.word_count }} words
+                                            </div>
+                                            <div class="col-4">
+                                                {% if text.time_limit %}
+                                                    <i class="fas fa-clock"></i><br>
+                                                    {{ text.time_limit }} min
+                                                {% else %}
+                                                    <i class="fas fa-infinity"></i><br>
+                                                    No limit
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-4">
+                                                <i class="fas fa-signal"></i><br>
+                                                {{ text.get_difficulty_display }}
+                                            </div>
+                                        </div>
+                                        
+                                        {% if text.tags %}
+                                            <div class="mb-2">
+                                                {% for tag in text.get_tags_list %}
+                                                    <span class="badge bg-secondary me-1">{{ tag }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="d-flex justify-content-between">
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'practice_text' text.id %}" class="btn btn-success">
+                                                    <i class="fas fa-brain"></i> Practice
+                                                </a>
+                                            </div>
+                                            <div>
+                                                <a href="{% url 'text_detail' text.id %}" class="btn btn-outline-info btn-sm me-1">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <small class="text-muted">
+                                                    {{ text.created_at|date:"M d, Y" }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-book-open fa-3x mb-3"></i>
+                        <p>No public texts available yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User's Texts -->
+{% if user.is_authenticated %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-user-edit"></i> Your Texts</h3>
+            </div>
+            <div class="card-body">
+                {% if user_texts %}
+                    <div class="row">
+                        {% for text in user_texts %}
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="card h-100 border-success">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h5 class="card-title">{{ text.title }}</h5>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="{% url 'text_detail' text.id %}"><i class="fas fa-eye"></i> View</a></li>
+                                                    <li><a class="dropdown-item" href="{% url 'edit_text' text.id %}"><i class="fas fa-edit"></i> Edit</a></li>
+                                                    <li><a class="dropdown-item" href="{% url 'toggle_text_visibility' text.id %}" onclick="return confirm('Change visibility?')">
+                                                        {% if text.is_public %}<i class="fas fa-eye-slash"></i> Make Private{% else %}<i class="fas fa-eye"></i> Make Public{% endif %}
+                                                    </a></li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li><a class="dropdown-item text-danger" href="{% url 'delete_text' text.id %}"><i class="fas fa-trash"></i> Delete</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        
+                                        <p class="card-text">{{ text.description|truncatechars:120 }}</p>
+                                        
+                                        <div class="row text-center text-muted small mb-3">
+                                            <div class="col-6">
+                                                <i class="fas fa-font"></i><br>
+                                                {{ text.word_count }} words
+                                            </div>
+                                            <div class="col-6">
+                                                <i class="fas fa-eye"></i><br>
+                                                {% if text.is_public %}Public{% else %}Private{% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        {% if text.tags %}
+                                            <div class="mb-2">
+                                                {% for tag in text.get_tags_list %}
+                                                    <span class="badge bg-success me-1">{{ tag }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="d-flex justify-content-between">
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'practice_text' text.id %}" class="btn btn-success">
+                                                    <i class="fas fa-play"></i> Practice
+                                                </a>
+                                                <a href="{% url 'enhanced_practice_dashboard' text.id %}" class="btn btn-outline-success">
+                                                    <i class="fas fa-brain"></i> Enhanced
+                                                </a>
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ text.created_at|date:"M d, Y" }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-plus-circle fa-3x mb-3"></i>
+                        <p>You haven't created any texts yet.</p>
+                        <a href="{% url 'create_text' %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Create Your First Text
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- No additional JavaScript needed - using Django forms -->
+{% endblock %}

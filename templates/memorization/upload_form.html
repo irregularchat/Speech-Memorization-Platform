@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Speech Memorization Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-upload"></i> {{ title }}</h2>
+                <p class="mb-0 text-muted">Upload a .txt file to create a new memorization text</p>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- File Upload -->
+                    <div class="mb-4">
+                        <label for="{{ form.file.id_for_label }}" class="form-label">
+                            <i class="fas fa-file-text"></i> Text File *
+                        </label>
+                        {{ form.file }}
+                        <div class="form-text">{{ form.file.help_text }}</div>
+                        {% if form.file.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.file.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Title and Difficulty Row -->
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">
+                                    <i class="fas fa-heading"></i> Title
+                                </label>
+                                {{ form.title }}
+                                <div class="form-text">{{ form.title.help_text }}</div>
+                                {% if form.title.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.title.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.difficulty.id_for_label }}" class="form-label">
+                                    <i class="fas fa-signal"></i> Difficulty
+                                </label>
+                                {{ form.difficulty }}
+                                {% if form.difficulty.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.difficulty.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            <i class="fas fa-info-circle"></i> Description
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.description.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Tags and Time Limit Row -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.tags.id_for_label }}" class="form-label">
+                                    <i class="fas fa-tags"></i> Tags
+                                </label>
+                                {{ form.tags }}
+                                <div class="form-text">{{ form.tags.help_text }}</div>
+                                {% if form.tags.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.tags.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.time_limit.id_for_label }}" class="form-label">
+                                    <i class="fas fa-clock"></i> Time Limit (minutes)
+                                </label>
+                                {{ form.time_limit }}
+                                {% if form.time_limit.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.time_limit.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Public checkbox -->
+                    <div class="form-check mb-4">
+                        {{ form.is_public }}
+                        <label class="form-check-label" for="{{ form.is_public.id_for_label }}">
+                            {{ form.is_public.help_text }}
+                        </label>
+                        {% if form.is_public.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.is_public.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'text_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Texts
+                        </a>
+                        
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-upload"></i> {{ submit_text }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Upload Instructions -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5><i class="fas fa-info-circle text-info"></i> Upload Instructions</h5>
+                <ul class="mb-0">
+                    <li><strong>File Format:</strong> Only .txt files are supported</li>
+                    <li><strong>File Size:</strong> Maximum 5MB per file</li>
+                    <li><strong>Content:</strong> Must contain at least 5 words and no more than 10,000 words</li>
+                    <li><strong>Encoding:</strong> File must be UTF-8 encoded</li>
+                    <li><strong>Title:</strong> If not specified, filename will be used as title</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('{{ form.file.id_for_label }}');
+    const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+    
+    // Auto-populate title from filename if title is empty
+    if (fileInput && titleInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0 && !titleInput.value.trim()) {
+                const filename = this.files[0].name;
+                const title = filename.replace(/\.[^/.]+$/, ""); // Remove extension
+                titleInput.value = title;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

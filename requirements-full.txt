@@ -1,0 +1,30 @@
+# Core Django
+Django==5.2.4
+python-decouple==3.8
+
+# Database
+psycopg2-binary==2.9.9
+dj-database-url==3.0.1
+
+# Web serving
+gunicorn==23.0.0
+whitenoise[brotli]==6.8.2
+
+# Google Cloud
+google-cloud-speech==2.33.0
+google-cloud-secret-manager==2.21.1
+
+# AI processing  
+openai==1.59.3
+
+# Core utilities
+requests==2.32.4
+python-dateutil==2.9.0.post0
+
+# Audio processing (minimal)
+numpy==1.26.4
+
+# Skip problematic audio libraries for initial deployment
+# librosa==0.10.2.post1
+# soundfile==0.12.1
+# pyaudio==0.2.14

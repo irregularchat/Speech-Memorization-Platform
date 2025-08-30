@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}About - Speech Memorization Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="text-center mb-5">
+            <h1 class="display-4"><i class="fas fa-microphone-alt text-primary"></i></h1>
+            <h2>Speech Memorization Platform</h2>
+            <p class="lead">Master speeches, military creeds, and any text using scientifically-proven spaced repetition techniques.</p>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3><i class="fas fa-info-circle text-info"></i> What is this platform?</h3>
+                <p>
+                    Our Speech Memorization Platform is designed to help users memorize and practice military creeds, 
+                    speeches, and any long-form text content. The app listens to your speech in real-time, 
+                    transcribes it, and compares it against the original text, highlighting any discrepancies.
+                </p>
+                <p>
+                    Imagine how lyrics from your favorite songs display on Apple Music or Spotify. 
+                    Now imagine using that same interface to memorize and practice your speeches by 
+                    gradually increasing the difficulty and removing the displayed words of the text 
+                    you need to memorize.
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h4><i class="fas fa-brain text-success"></i> Spaced Repetition</h4>
+                        <p>
+                            Uses the scientifically-proven SM-2 algorithm (like Anki) to optimize 
+                            your learning. Words you struggle with appear more frequently, while 
+                            mastered words are gradually hidden.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h4><i class="fas fa-microphone text-primary"></i> Live Recording</h4>
+                        <p>
+                            Real-time audio capture and speech-to-text transcription. 
+                            Practice speaking naturally and get immediate feedback on 
+                            your accuracy and performance.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h4><i class="fas fa-chart-line text-warning"></i> Progress Analytics</h4>
+                        <p>
+                            Comprehensive tracking of your memorization progress with 
+                            detailed analytics, accuracy trends, and achievement milestones 
+                            to keep you motivated.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h4><i class="fas fa-mobile-alt text-info"></i> Modern Interface</h4>
+                        <p>
+                            Clean, responsive design that works on desktop, tablet, and mobile. 
+                            Apple Music-style text display with smooth scrolling and 
+                            real-time highlighting.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3><i class="fas fa-users text-primary"></i> Community & Support</h3>
+                <p>
+                    Join our community for support, tips, and collaboration on improving the platform.
+                </p>
+                <div class="d-flex gap-3">
+                    <a href="https://matrix.to/#/%23speech-memorization-platform:irregularchat.com" 
+                       target="_blank" class="btn btn-outline-primary">
+                        <i class="fas fa-comments"></i> Matrix Community
+                    </a>
+                    <a href="https://github.com/irregularchat/Speech-Memorization-Platform" 
+                       target="_blank" class="btn btn-outline-dark">
+                        <i class="fab fa-github"></i> GitHub Repository
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h3><i class="fas fa-code text-secondary"></i> Technology Stack</h3>
+                <p>Built with modern, robust technologies for performance and scalability:</p>
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <i class="fab fa-python fa-2x text-primary"></i>
+                        <h6 class="mt-2">Django</h6>
+                        <small class="text-muted">Backend Framework</small>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <i class="fab fa-bootstrap fa-2x text-purple"></i>
+                        <h6 class="mt-2">Bootstrap 5</h6>
+                        <small class="text-muted">UI Framework</small>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <i class="fas fa-database fa-2x text-success"></i>
+                        <h6 class="mt-2">PostgreSQL</h6>
+                        <small class="text-muted">Database</small>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <i class="fas fa-microphone fa-2x text-danger"></i>
+                        <h6 class="mt-2">Web Audio API</h6>
+                        <small class="text-muted">Real-time Audio</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-play"></i> Start Practicing
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

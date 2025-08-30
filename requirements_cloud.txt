@@ -1,0 +1,35 @@
+# Core Django dependencies
+Django==5.2.4
+django-decouple==2.1
+dj-database-url==2.2.0
+psycopg2-binary==2.9.9
+
+# Static file serving
+whitenoise[brotli]==6.8.2
+
+# Cache and sessions
+django-redis==5.4.0
+
+# Google Cloud dependencies
+google-cloud-speech==2.33.0
+google-cloud-storage==2.20.0
+
+# AI/Speech processing
+openai==1.59.3
+numpy==1.26.4
+librosa==0.10.2.post1
+soundfile==0.12.1
+speechrecognition==3.12.0
+
+# Audio processing (optional - may need system dependencies)
+# pyaudio==0.2.14
+
+# Web serving
+gunicorn==23.0.0
+
+# Additional utilities
+requests==2.32.4
+python-dateutil==2.9.0.post0
+
+# For health checks
+django-extensions==3.2.3

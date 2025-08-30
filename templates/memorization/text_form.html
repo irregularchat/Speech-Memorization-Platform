@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Speech Memorization Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-edit"></i> {{ title }}</h2>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Title and Difficulty Row -->
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">
+                                    <i class="fas fa-heading"></i> Title *
+                                </label>
+                                {{ form.title }}
+                                {% if form.title.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.title.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.difficulty.id_for_label }}" class="form-label">
+                                    <i class="fas fa-signal"></i> Difficulty
+                                </label>
+                                {{ form.difficulty }}
+                                {% if form.difficulty.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.difficulty.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="mb-3">
+                        <label for="{{ form.content.id_for_label }}" class="form-label">
+                            <i class="fas fa-file-text"></i> Text Content *
+                        </label>
+                        {{ form.content }}
+                        <div class="form-text">
+                            <span class="text-muted">Word count: </span>
+                            <span id="wordCount">{{ text.word_count|default:"0" }}</span>
+                        </div>
+                        {% if form.content.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.content.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            <i class="fas fa-info-circle"></i> Description
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.description.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Tags and Time Limit Row -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.tags.id_for_label }}" class="form-label">
+                                    <i class="fas fa-tags"></i> Tags
+                                </label>
+                                {{ form.tags }}
+                                <div class="form-text">{{ form.tags.help_text }}</div>
+                                {% if form.tags.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.tags.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.time_limit.id_for_label }}" class="form-label">
+                                    <i class="fas fa-clock"></i> Time Limit (minutes)
+                                </label>
+                                {{ form.time_limit }}
+                                {% if form.time_limit.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.time_limit.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Public checkbox -->
+                    <div class="form-check mb-4">
+                        {{ form.is_public }}
+                        <label class="form-check-label" for="{{ form.is_public.id_for_label }}">
+                            <i class="fas fa-globe"></i> Make this text public for other users
+                        </label>
+                        {% if form.is_public.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.is_public.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'text_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Texts
+                        </a>
+                        
+                        <div>
+                            {% if text %}
+                                <a href="{% url 'delete_text' text.id %}" class="btn btn-danger me-2">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> {{ submit_text }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if text %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4><i class="fas fa-eye"></i> Preview</h4>
+            </div>
+            <div class="card-body">
+                <div class="text-display">
+                    {{ text.content|linebreaks }}
+                </div>
+                <div class="row text-center text-muted small">
+                    <div class="col-md-3">
+                        <i class="fas fa-font"></i><br>
+                        {{ text.word_count }} words
+                    </div>
+                    <div class="col-md-3">
+                        <i class="fas fa-signal"></i><br>
+                        {{ text.get_difficulty_display }}
+                    </div>
+                    <div class="col-md-3">
+                        {% if text.time_limit %}
+                            <i class="fas fa-clock"></i><br>
+                            {{ text.time_limit }} minutes
+                        {% else %}
+                            <i class="fas fa-infinity"></i><br>
+                            No time limit
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <i class="fas fa-eye"></i><br>
+                        {% if text.is_public %}Public{% else %}Private{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Word counter for content field
+document.addEventListener('DOMContentLoaded', function() {
+    const contentField = document.getElementById('{{ form.content.id_for_label }}');
+    const wordCountElement = document.getElementById('wordCount');
+    
+    function updateWordCount() {
+        const content = contentField.value.trim();
+        const wordCount = content ? content.split(/\s+/).length : 0;
+        wordCountElement.textContent = wordCount;
+    }
+    
+    if (contentField && wordCountElement) {
+        contentField.addEventListener('input', updateWordCount);
+        updateWordCount(); // Initial count
+    }
+});
+</script>
+{% endblock %}
