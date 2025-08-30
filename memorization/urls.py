@@ -16,6 +16,7 @@ urlpatterns = [
     # Enhanced practice
     path('practice/<int:text_id>/enhanced/', enhanced_practice_views.enhanced_practice_dashboard, name='enhanced_practice_dashboard'),
     path('practice/<int:text_id>/legacy/', practice_views.practice_text_enhanced, name='practice_text_enhanced'),
+    path('practice/<int:text_id>/modes/', views.practice_modes, name='practice_modes'),
     
     # Practice AJAX endpoints
     path('api/practice/start/', practice_views.start_adaptive_session, name='start_adaptive_session'),

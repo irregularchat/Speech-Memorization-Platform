@@ -280,3 +280,30 @@ def duplicate_text(request, text_id):
     
     messages.success(request, f'Text duplicated as "{duplicate.title}". You can now edit it.')
     return redirect('edit_text', text_id=duplicate.id)
+
+
+def practice_modes(request, text_id):
+    """Practice with all modes: Speech, Typing, Karaoke, Enhanced"""
+    text = get_object_or_404(Text, id=text_id)
+    
+    # Check if user can access this text
+    if not text.is_public and text.created_by != request.user:
+        messages.error(request, 'You do not have permission to practice this text.')
+        return redirect('text_list')
+    
+    # Get or create user progress
+    user_progress = None
+    if request.user.is_authenticated:
+        user_progress, created = UserTextProgress.objects.get_or_create(
+            user=request.user,
+            text=text
+        )
+    
+    context = {
+        'text': text,
+        'user_progress': user_progress,
+        'word_count': len(text.content.split()),
+        'can_edit': request.user.is_authenticated and text.created_by == request.user
+    }
+    
+    return render(request, 'memorization/practice_modes.html', context)

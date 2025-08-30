@@ -21,14 +21,14 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 
 from core import views as core_views
-from memorization import enhanced_practice_views
+from memorization import enhanced_practice_views, views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     
     # Core views
     path('', core_views.home, name='home'),
-    path('practice/<int:text_id>/', enhanced_practice_views.enhanced_practice_dashboard, name='practice_text'),
+    path('practice/<int:text_id>/', views.practice_modes, name='practice_text'),
     path('practice/<int:text_id>/enhanced/', enhanced_practice_views.enhanced_practice_dashboard, name='enhanced_practice_dashboard'),
     path('practice/<int:text_id>/basic/', core_views.practice_text, name='practice_text_basic'),
     path('analytics/', core_views.analytics, name='analytics'),

@@ -1,0 +1,688 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Practice: {{ text.title }} - Speech Memorization Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Practice Mode Selector */
+.practice-mode-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 10px;
+}
+
+.mode-tab {
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px 5px 0 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.mode-tab:hover {
+    background: #e9ecef;
+}
+
+.mode-tab.active {
+    background: white;
+    border-bottom: 2px solid white;
+    margin-bottom: -2px;
+    font-weight: bold;
+}
+
+.mode-tab i {
+    margin-right: 5px;
+}
+
+.mode-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.mode-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Real-time vs Traditional toggle */
+.recording-mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 60px;
+    height: 30px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: #007bff;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(30px);
+}
+
+/* Practice Stats Dashboard */
+.practice-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-card .stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Text Display Area */
+.text-display-area {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    min-height: 300px;
+    font-size: 1.2rem;
+    line-height: 1.8;
+}
+
+/* Control Buttons */
+.practice-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.practice-controls .btn {
+    min-width: 120px;
+}
+
+.btn-mode {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-mode::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-mode:hover::before {
+    width: 300px;
+    height: 300px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>{{ text.title }}</h2>
+                <a href="{% url 'text_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Texts
+                </a>
+            </div>
+
+            <!-- Practice Mode Tabs -->
+            <div class="practice-mode-tabs">
+                <div class="mode-tab active" data-mode="speech" onclick="switchMode('speech')">
+                    <i class="fas fa-microphone"></i> Speech Practice
+                </div>
+                <div class="mode-tab" data-mode="typing" onclick="switchMode('typing')">
+                    <i class="fas fa-keyboard"></i> Typing Practice
+                </div>
+                <div class="mode-tab" data-mode="karaoke" onclick="switchMode('karaoke')">
+                    <i class="fas fa-music"></i> Karaoke Mode
+                </div>
+                <div class="mode-tab" data-mode="enhanced" onclick="switchMode('enhanced')">
+                    <i class="fas fa-brain"></i> Enhanced Practice
+                </div>
+            </div>
+
+            <!-- Practice Stats Dashboard -->
+            <div class="practice-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="words-completed">0</div>
+                    <div class="stat-label">Words Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="accuracy-stat">100%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="time-elapsed">0:00</div>
+                    <div class="stat-label">Time Elapsed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="wpm-stat">0</div>
+                    <div class="stat-label">Words/Minute</div>
+                </div>
+            </div>
+
+            <!-- Speech Practice Mode -->
+            <div id="speech-mode" class="mode-content active">
+                <!-- Real-time vs Traditional Toggle -->
+                <div class="recording-mode-toggle">
+                    <span><i class="fas fa-wave-square"></i> Real-time Mode</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="recording-mode-toggle" onchange="toggleRecordingMode()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span><i class="fas fa-microphone-alt"></i> Traditional Mode</span>
+                </div>
+
+                <div class="text-display-area" id="speech-text-display">
+                    <!-- Text will be rendered here with word masking -->
+                </div>
+
+                <div class="practice-controls">
+                    <button class="btn btn-primary btn-mode" id="start-recording-btn" onclick="startRecording()">
+                        <i class="fas fa-microphone"></i> Start Recording
+                    </button>
+                    <button class="btn btn-info btn-mode" onclick="requestHint()">
+                        <i class="fas fa-lightbulb"></i> Hint
+                    </button>
+                    <button class="btn btn-success btn-mode" onclick="testAudio()">
+                        <i class="fas fa-headphones"></i> Test Audio
+                    </button>
+                    <button class="btn btn-warning btn-mode" onclick="nextWord()">
+                        <i class="fas fa-forward"></i> Next Word
+                    </button>
+                </div>
+
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i> 
+                    <span id="recording-status">Click "Start Recording" to begin speech practice</span>
+                </div>
+            </div>
+
+            <!-- Typing Practice Mode -->
+            <div id="typing-mode" class="mode-content">
+                <div class="typing-difficulty mb-3">
+                    <label>Difficulty:</label>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-outline-success" onclick="setTypingDifficulty('easy')">Easy</button>
+                        <button class="btn btn-outline-warning active" onclick="setTypingDifficulty('normal')">Normal</button>
+                        <button class="btn btn-outline-danger" onclick="setTypingDifficulty('hard')">Hard</button>
+                    </div>
+                </div>
+
+                <div id="typing-container">
+                    <!-- Typing mode will be initialized here -->
+                </div>
+            </div>
+
+            <!-- Karaoke Mode -->
+            <div id="karaoke-mode" class="mode-content">
+                <div class="karaoke-controls mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-success" onclick="karaokePlay()">
+                            <i class="fas fa-play"></i> Play
+                        </button>
+                        <button class="btn btn-warning" onclick="karaokePause()">
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                        <button class="btn btn-danger" onclick="karaokeStop()">
+                            <i class="fas fa-stop"></i> Stop
+                        </button>
+                        
+                        <div class="speed-control">
+                            <label>Speed:</label>
+                            <input type="range" min="0.5" max="2" step="0.1" value="1" 
+                                   id="karaoke-speed" onchange="updateKaraokeSpeed()">
+                            <span id="speed-display">1.0x</span>
+                        </div>
+
+                        <button class="btn btn-info" onclick="toggleKaraokePractice()">
+                            <i class="fas fa-microphone"></i> Practice Along
+                        </button>
+                    </div>
+                </div>
+
+                <div class="karaoke-progress-bar">
+                    <div class="karaoke-progress" style="width: 0%"></div>
+                </div>
+
+                <div class="text-display-area" id="karaoke-text-display">
+                    <!-- Karaoke text will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Enhanced Practice Mode -->
+            <div id="enhanced-mode" class="mode-content">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Practice Modes</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary" onclick="startWordReveal()">
+                                        <i class="fas fa-eye"></i> Progressive Reveal
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="startDelayedRecall()">
+                                        <i class="fas fa-clock"></i> Delayed Recall
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="startAdaptivePractice()">
+                                        <i class="fas fa-robot"></i> AI Adaptive
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5>Settings</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="auto-advance">
+                                    <label class="form-check-label" for="auto-advance">
+                                        Auto-advance words
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="show-hints">
+                                    <label class="form-check-label" for="show-hints">
+                                        Show hints
+                                    </label>
+                                </div>
+                                <div class="mt-2">
+                                    <label>Masking Level:</label>
+                                    <input type="range" class="form-range" min="0" max="100" value="50" id="masking-level">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-9">
+                        <div class="text-display-area" id="enhanced-text-display">
+                            <!-- Enhanced practice text will be rendered here -->
+                        </div>
+
+                        <div class="practice-controls">
+                            <button class="btn btn-primary btn-lg" onclick="startEnhancedSession()">
+                                <i class="fas fa-play"></i> Start Session
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden audio element for playback -->
+<audio id="text-audio" style="display: none;"></audio>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Load practice mode scripts -->
+<script src="{% static 'js/karaoke_mode.js' %}"></script>
+<script src="{% static 'js/typing_mode.js' %}"></script>
+<script src="{% static 'js/ai_speech_recorder.js' %}"></script>
+<script src="{% static 'js/enhanced_practice.js' %}"></script>
+
+<script>
+// Initialize variables
+const textContent = {{ text.content|safe|escapejs }};
+const textId = {{ text.id }};
+const totalWords = {{ text.word_count }};
+let currentMode = 'speech';
+let karaokeMode = null;
+let typingMode = null;
+let isRealTimeMode = true;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSpeechMode();
+    setupEventListeners();
+});
+
+// Mode switching
+function switchMode(mode) {
+    // Update tabs
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+    
+    // Update content
+    document.querySelectorAll('.mode-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`${mode}-mode`).classList.add('active');
+    
+    // Initialize mode if needed
+    currentMode = mode;
+    
+    switch(mode) {
+        case 'typing':
+            initializeTypingMode();
+            break;
+        case 'karaoke':
+            initializeKaraokeMode();
+            break;
+        case 'speech':
+            initializeSpeechMode();
+            break;
+        case 'enhanced':
+            initializeEnhancedMode();
+            break;
+    }
+}
+
+// Initialize Speech Mode
+function initializeSpeechMode() {
+    const displayElement = document.getElementById('speech-text-display');
+    renderMaskedText(displayElement);
+}
+
+// Initialize Typing Mode
+function initializeTypingMode() {
+    if (!typingMode) {
+        typingMode = new TypingMode(textContent, {
+            difficulty: 'normal',
+            showFullText: true,
+            progressiveReveal: false
+        });
+        typingMode.initialize('typing-container');
+    }
+}
+
+// Initialize Karaoke Mode
+function initializeKaraokeMode() {
+    if (!karaokeMode) {
+        karaokeMode = new KaraokeMode(textContent);
+        karaokeMode.initialize('karaoke-text-display');
+        
+        // Enable practice mode for speech along
+        karaokeMode.enablePracticeMode();
+    }
+}
+
+// Initialize Enhanced Mode
+function initializeEnhancedMode() {
+    const displayElement = document.getElementById('enhanced-text-display');
+    renderMaskedText(displayElement, 50); // 50% masking by default
+}
+
+// Render masked text for speech/enhanced modes
+function renderMaskedText(element, maskingLevel = 0) {
+    const words = textContent.split(/\s+/);
+    element.innerHTML = '';
+    
+    words.forEach((word, index) => {
+        const wordSpan = document.createElement('span');
+        wordSpan.className = 'practice-word';
+        wordSpan.dataset.wordIndex = index;
+        
+        if (index === 0) {
+            wordSpan.classList.add('current-word');
+        }
+        
+        // Apply masking based on level
+        if (maskingLevel > 0 && Math.random() * 100 < maskingLevel) {
+            wordSpan.classList.add('masked-word');
+            wordSpan.textContent = '_'.repeat(word.length);
+            wordSpan.dataset.word = word;
+        } else {
+            wordSpan.textContent = word;
+        }
+        
+        element.appendChild(wordSpan);
+        element.appendChild(document.createTextNode(' '));
+    });
+}
+
+// Toggle recording mode (real-time vs traditional)
+function toggleRecordingMode() {
+    isRealTimeMode = !document.getElementById('recording-mode-toggle').checked;
+    const status = document.getElementById('recording-status');
+    
+    if (isRealTimeMode) {
+        status.textContent = 'Real-time mode: Continuous listening with instant feedback';
+    } else {
+        status.textContent = 'Traditional mode: Record complete section then submit';
+    }
+}
+
+// Speech recording functions
+function startRecording() {
+    const btn = document.getElementById('start-recording-btn');
+    
+    if (btn.classList.contains('recording')) {
+        stopRecording();
+    } else {
+        btn.classList.add('recording');
+        btn.innerHTML = '<i class="fas fa-stop"></i> Stop Recording';
+        document.getElementById('recording-status').textContent = 'Recording... Speak clearly into your microphone';
+        
+        if (isRealTimeMode) {
+            // Start real-time speech recognition
+            startRealTimeSpeech();
+        } else {
+            // Start traditional recording
+            startTraditionalRecording();
+        }
+    }
+}
+
+function stopRecording() {
+    const btn = document.getElementById('start-recording-btn');
+    btn.classList.remove('recording');
+    btn.innerHTML = '<i class="fas fa-microphone"></i> Start Recording';
+    document.getElementById('recording-status').textContent = 'Recording stopped. Click to start again.';
+    
+    // Stop appropriate recording mode
+    if (isRealTimeMode) {
+        stopRealTimeSpeech();
+    } else {
+        stopTraditionalRecording();
+    }
+}
+
+// Placeholder functions (implement with actual API calls)
+function startRealTimeSpeech() {
+    console.log('Starting real-time speech recognition...');
+    // Implement Web Speech API or Google Speech integration
+}
+
+function stopRealTimeSpeech() {
+    console.log('Stopping real-time speech recognition...');
+}
+
+function startTraditionalRecording() {
+    console.log('Starting traditional recording...');
+    // Implement audio recording
+}
+
+function stopTraditionalRecording() {
+    console.log('Stopping traditional recording...');
+}
+
+function requestHint() {
+    console.log('Requesting hint...');
+    // Show hint for current word
+}
+
+function testAudio() {
+    console.log('Testing audio...');
+    // Test microphone
+}
+
+function nextWord() {
+    console.log('Moving to next word...');
+    // Advance to next word
+}
+
+// Typing mode functions
+function setTypingDifficulty(difficulty) {
+    if (typingMode) {
+        typingMode.options.difficulty = difficulty;
+        typingMode.reset();
+        typingMode.renderText();
+    }
+}
+
+// Karaoke mode functions
+function karaokePlay() {
+    if (karaokeMode) {
+        karaokeMode.play();
+    }
+}
+
+function karaokePause() {
+    if (karaokeMode) {
+        karaokeMode.pause();
+    }
+}
+
+function karaokeStop() {
+    if (karaokeMode) {
+        karaokeMode.stop();
+    }
+}
+
+function updateKaraokeSpeed() {
+    const speed = document.getElementById('karaoke-speed').value;
+    document.getElementById('speed-display').textContent = speed + 'x';
+    
+    if (karaokeMode) {
+        karaokeMode.setSpeed(parseFloat(speed));
+    }
+}
+
+function toggleKaraokePractice() {
+    if (karaokeMode) {
+        karaokeMode.enablePracticeMode();
+    }
+}
+
+// Enhanced mode functions
+function startWordReveal() {
+    console.log('Starting progressive word reveal...');
+}
+
+function startDelayedRecall() {
+    console.log('Starting delayed recall practice...');
+}
+
+function startAdaptivePractice() {
+    console.log('Starting AI adaptive practice...');
+}
+
+function startEnhancedSession() {
+    const maskingLevel = document.getElementById('masking-level').value;
+    const autoAdvance = document.getElementById('auto-advance').checked;
+    const showHints = document.getElementById('show-hints').checked;
+    
+    console.log('Starting enhanced session with settings:', {
+        maskingLevel,
+        autoAdvance,
+        showHints
+    });
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    // Update stats periodically
+    setInterval(updateStats, 1000);
+    
+    // Listen for completion events
+    window.addEventListener('karaokeComplete', (e) => {
+        console.log('Karaoke completed:', e.detail);
+    });
+    
+    window.addEventListener('typingComplete', (e) => {
+        console.log('Typing completed:', e.detail);
+    });
+}
+
+// Update practice statistics
+function updateStats() {
+    // This would be updated based on actual practice data
+    // For now, just placeholder updates
+}
+
+// CSRF token for AJAX requests
+const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+</script>
+{% endblock %}
