@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Production builds
+dist/
+build/
+
+# Environment files with sensitive data
+.env.local
+.env.production
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Django files
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+
+# Temporary files
+.tmp/
+temp/
