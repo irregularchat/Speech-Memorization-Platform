@@ -23,12 +23,16 @@ class UnifiedSpeechService {
     
     async initialize() {
         try {
-            if (this.serviceType === 'google-cloud') {
-                await this.initializeGoogleCloudSpeech();
-            } else if (this.serviceType === 'webkit') {
+            // Always try WebKit first since Google Cloud has CORS issues in browsers
+            if ('webkitSpeechRecognition' in window) {
+                console.log('🎤 Using WebKit Speech Recognition (browser native)');
+                this.serviceType = 'webkit';
                 this.initializeWebKitSpeech();
+            } else if (this.serviceType === 'google-cloud') {
+                console.log('🌐 Attempting Google Cloud Speech (may have CORS issues)');
+                await this.initializeGoogleCloudSpeech();
             } else {
-                throw new Error('No speech recognition service available');
+                throw new Error('No speech recognition service available in this browser');
             }
             
             this.isInitialized = true;
@@ -37,8 +41,22 @@ class UnifiedSpeechService {
             
         } catch (error) {
             console.error('❌ Failed to initialize speech service:', error);
+            
+            // Try fallback to WebKit if Google Cloud fails
+            if (this.serviceType === 'google-cloud' && 'webkitSpeechRecognition' in window) {
+                console.log('🔄 Falling back to WebKit Speech Recognition');
+                try {
+                    this.serviceType = 'webkit';
+                    this.initializeWebKitSpeech();
+                    this.isInitialized = true;
+                    return true;
+                } catch (fallbackError) {
+                    console.error('❌ Fallback also failed:', fallbackError);
+                }
+            }
+            
             if (this.onError) {
-                this.onError(`Failed to initialize speech recognition: ${error.message}`);
+                this.onError(`Speech recognition not available: ${error.message}`);
             }
             return false;
         }
@@ -87,12 +105,12 @@ class UnifiedSpeechService {
     
     initializeWebKitSpeech() {
         if (!('webkitSpeechRecognition' in window)) {
-            throw new Error('WebKit Speech Recognition not supported');
+            throw new Error('WebKit Speech Recognition not supported in this browser');
         }
         
         this.currentService = new webkitSpeechRecognition();
-        this.currentService.continuous = true;
-        this.currentService.interimResults = true;
+        this.currentService.continuous = false; // Changed to false for better reliability
+        this.currentService.interimResults = false; // Changed to false for final results only
         this.currentService.lang = 'en-US';
         this.currentService.maxAlternatives = 1;
         
@@ -111,26 +129,51 @@ class UnifiedSpeechService {
         };
         
         this.currentService.onresult = (event) => {
+            console.log('🗣️ WebKit speech result event:', event);
             const results = event.results;
-            const lastResult = results[results.length - 1];
             
-            if (lastResult.isFinal && this.onResult) {
-                this.onResult({
-                    transcript: lastResult[0].transcript.trim(),
-                    confidence: lastResult[0].confidence || 0.8,
-                    isFinal: true
-                });
+            for (let i = 0; i < results.length; i++) {
+                const result = results[i];
+                if (result.isFinal && this.onResult) {
+                    const transcript = result[0].transcript.trim();
+                    const confidence = result[0].confidence || 0.85;
+                    
+                    console.log('📝 Final transcript:', transcript, 'confidence:', confidence);
+                    
+                    this.onResult({
+                        transcript: transcript,
+                        confidence: confidence,
+                        isFinal: true
+                    });
+                }
             }
         };
         
         this.currentService.onerror = (event) => {
-            console.error('WebKit Speech Recognition error:', event.error);
+            console.error('❌ WebKit Speech Recognition error:', event.error);
+            let errorMessage = `Speech recognition error: ${event.error}`;
+            
+            switch(event.error) {
+                case 'no-speech':
+                    errorMessage = 'No speech detected. Please try speaking louder.';
+                    break;
+                case 'audio-capture':
+                    errorMessage = 'Microphone not accessible. Please check permissions.';
+                    break;
+                case 'not-allowed':
+                    errorMessage = 'Microphone permission denied. Please allow microphone access.';
+                    break;
+                case 'network':
+                    errorMessage = 'Network error. Please check your internet connection.';
+                    break;
+            }
+            
             if (this.onError) {
-                this.onError(`Speech recognition error: ${event.error}`);
+                this.onError(errorMessage);
             }
         };
         
-        console.log('⚡ WebKit Speech Recognition initialized (fallback mode)');
+        console.log('⚡ WebKit Speech Recognition initialized successfully');
     }
     
     async startRecording() {

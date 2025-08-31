@@ -65,6 +65,10 @@ class SpeechMemorizationApp {
         
         console.log('✅ App initialized successfully');
         console.log('🔑 Google Cloud API Key configured:', import.meta.env.VITE_GOOGLE_CLOUD_API_KEY ? 'Yes' : 'No');
+        console.log('🎤 WebKit Speech Recognition available:', 'webkitSpeechRecognition' in window);
+        
+        // Test speech recognition availability immediately
+        this.testSpeechRecognitionAvailability();
     }
     
     parseText() {
@@ -77,6 +81,21 @@ class SpeechMemorizationApp {
         }));
         this.currentWordIndex = 0;
         console.log(`📝 Parsed ${this.words.length} words from text`);
+    }
+    
+    testSpeechRecognitionAvailability() {
+        if ('webkitSpeechRecognition' in window) {
+            console.log('✅ WebKit Speech Recognition is available');
+            try {
+                const test = new webkitSpeechRecognition();
+                console.log('✅ Can create WebKit Speech Recognition instance');
+            } catch (error) {
+                console.error('❌ Error creating WebKit Speech Recognition:', error);
+            }
+        } else {
+            console.error('❌ WebKit Speech Recognition not available');
+            this.showFeedback('Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari.', 'danger');
+        }
     }
     
     async initSpeechService() {
@@ -280,7 +299,16 @@ class SpeechMemorizationApp {
     }
     
     initSpeechMode() {
-        this.showFeedback('🎤 Speech Practice Mode: Click "Start Recording" and speak the highlighted word clearly. The current word is highlighted in yellow.', 'success');
+        const isWebKit = 'webkitSpeechRecognition' in window;
+        const message = isWebKit 
+            ? '🎤 Speech Practice Mode: Click "Start Recording" and speak the highlighted word clearly. The current word is highlighted in yellow. Make sure to allow microphone access when prompted.'
+            : '❌ Speech recognition not available in this browser. Please use Chrome, Edge, or Safari.';
+        
+        this.showFeedback(message, isWebKit ? 'success' : 'danger');
+        
+        if (isWebKit) {
+            console.log('💡 Instructions: Click the blue "Start Recording" button, allow microphone access, then speak the highlighted yellow word clearly.');
+        }
     }
     
     initTypingMode() {
@@ -377,18 +405,35 @@ class SpeechMemorizationApp {
     }
     
     async toggleRecording() {
+        console.log('🔴 toggleRecording() called, isRecording:', this.isRecording);
+        
         if (!this.speechService) {
+            console.error('❌ Speech service not initialized');
             this.showFeedback('Speech recognition service not initialized', 'danger');
             return;
         }
         
         if (this.isRecording) {
+            console.log('⏹️ Stopping recording...');
             this.speechService.stopRecording();
         } else {
+            console.log('▶️ Starting recording...');
             this.startTime = this.startTime || Date.now();
-            const started = await this.speechService.startRecording();
-            if (!started) {
-                this.showFeedback('Failed to start recording. Please check microphone permissions.', 'danger');
+            
+            try {
+                const started = await this.speechService.startRecording();
+                console.log('🎤 Recording start result:', started);
+                
+                if (!started) {
+                    console.error('❌ Failed to start recording');
+                    this.showFeedback('Failed to start recording. Please check microphone permissions.', 'danger');
+                } else {
+                    console.log('✅ Recording started successfully');
+                    this.showFeedback('🎤 Recording started! Speak clearly now.', 'info');
+                }
+            } catch (error) {
+                console.error('❌ Error starting recording:', error);
+                this.showFeedback(`Recording error: ${error.message}`, 'danger');
             }
         }
     }
