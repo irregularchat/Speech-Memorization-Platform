@@ -5,15 +5,15 @@ export default defineConfig({
   server: {
     port: 8000,
     host: true,
-    open: '/enhancedIndex.html' // Open enhanced version by default
+    open: 'enhancedIndex.html' // Open enhanced version by default
   },
   build: {
     outDir: '../dist',
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: 'src/index.html',
-        enhanced: 'src/enhancedIndex.html'
+        main: './index.html',
+        enhanced: './enhancedIndex.html'
       }
     }
   },
