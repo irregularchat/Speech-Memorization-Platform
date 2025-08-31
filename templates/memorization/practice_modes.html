@@ -402,7 +402,7 @@ input:checked + .toggle-slider:before {
 
 <script>
 // Initialize variables
-const textContent = {{ text.content|safe|escapejs }};
+const textContent = "{{ text.content|escapejs }}";
 const textId = {{ text.id }};
 const totalWords = {{ text.word_count }};
 let currentMode = 'speech';
@@ -682,7 +682,7 @@ function updateStats() {
     // For now, just placeholder updates
 }
 
-// CSRF token for AJAX requests
-const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+// CSRF token for AJAX requests (use global window.csrftoken from base.html)
+// const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
 </script>
 {% endblock %}

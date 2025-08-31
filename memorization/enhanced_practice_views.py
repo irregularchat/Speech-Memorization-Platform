@@ -583,3 +583,146 @@ def get_session_recommendations(request, text_id):
         'success': True,
         'recommendations': recommendations
     })
+
+
+@login_required
+@require_http_methods(["POST"])
+def start_delayed_recall_session(request):
+    """Start a delayed recall practice session"""
+    try:
+        data = json.loads(request.body)
+        text_id = data.get('text_id')
+        delay_minutes = data.get('delay_minutes', 15)
+        reveal_percentage = data.get('reveal_percentage', 0.3)
+        auto_hide_enabled = data.get('auto_hide_enabled', True)
+        auto_hide_delay = data.get('auto_hide_delay', 5)
+        
+        text = get_object_or_404(Text, id=text_id)
+        
+        # Check if user can access this text
+        if not text.is_public and text.created_by != request.user:
+            return JsonResponse({'success': False, 'error': 'Access denied'})
+        
+        # Create delayed recall session
+        from .models import DelayedRecallSession
+        session = DelayedRecallSession.objects.create(
+            user=request.user,
+            text=text,
+            delay_minutes=delay_minutes,
+            reveal_percentage=reveal_percentage,
+            auto_hide_enabled=auto_hide_enabled,
+            auto_hide_delay=auto_hide_delay,
+            is_study_phase=True
+        )
+        
+        # Generate initial display (study phase)
+        words = text.content.split()
+        total_words = len(words)
+        reveal_count = int(total_words * reveal_percentage)
+        
+        # Select words to reveal (prioritize beginning and important words)
+        words_to_reveal = list(range(min(reveal_count, total_words)))
+        session.words_to_recall = words_to_reveal
+        session.save()
+        
+        # Create display HTML
+        display_html = ""
+        for i, word in enumerate(words):
+            if i in words_to_reveal:
+                display_html += f'<span class="word-visible" data-word-index="{i}">{word}</span> '
+            else:
+                display_html += f'<span class="word-masked" data-word-index="{i}">{"_" * len(word)}</span> '
+        
+        return JsonResponse({
+            'success': True,
+            'session_id': session.id,
+            'study_phase': True,
+            'delay_minutes': delay_minutes,
+            'display_text': display_html,
+            'instruction': f'Study the visible words for as long as you need. You will be tested after a {delay_minutes}-minute delay.',
+            'total_words': total_words,
+            'visible_words': len(words_to_reveal)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required 
+@require_http_methods(["POST"])
+def start_word_reveal_session(request):
+    """Start a progressive word reveal practice session"""
+    try:
+        data = json.loads(request.body)
+        text_id = data.get('text_id')
+        reveal_strategy = data.get('reveal_strategy', 'progressive')
+        reveal_percentage = data.get('reveal_percentage', 0.1)
+        increment_percentage = data.get('increment_percentage', 0.1)
+        
+        text = get_object_or_404(Text, id=text_id)
+        
+        # Check if user can access this text
+        if not text.is_public and text.created_by != request.user:
+            return JsonResponse({'success': False, 'error': 'Access denied'})
+        
+        # Create word reveal session
+        from .models import WordRevealSession
+        session = WordRevealSession.objects.create(
+            user=request.user,
+            text=text,
+            reveal_strategy=reveal_strategy,
+            reveal_percentage=reveal_percentage,
+            increment_percentage=increment_percentage,
+            current_round=1
+        )
+        
+        # Calculate initial word reveal
+        words = text.content.split()
+        total_words = len(words)
+        initial_reveal_count = max(1, int(total_words * reveal_percentage))
+        
+        # Select initial words to reveal
+        if reveal_strategy == 'progressive':
+            # Start with first few words
+            visible_words = list(range(initial_reveal_count))
+        elif reveal_strategy == 'difficulty_adaptive':
+            # Start with easier/shorter words
+            word_difficulties = [(i, len(word)) for i, word in enumerate(words)]
+            word_difficulties.sort(key=lambda x: x[1])  # Sort by length
+            visible_words = [idx for idx, _ in word_difficulties[:initial_reveal_count]]
+        else:
+            # Random selection
+            import random
+            visible_words = random.sample(range(total_words), initial_reveal_count)
+        
+        session.currently_visible_words = visible_words
+        session.save()
+        
+        # Create display HTML
+        display_html = ""
+        for i, word in enumerate(words):
+            if i in visible_words:
+                display_html += f'<span class="word-visible word-current" data-word-index="{i}">{word}</span> '
+            else:
+                display_html += f'<span class="word-masked" data-word-index="{i}">{"_" * len(word)}</span> '
+        
+        return JsonResponse({
+            'success': True,
+            'session_id': session.id,
+            'session_type': 'word_reveal',
+            'display_text': display_html,
+            'current_round': 1,
+            'visible_count': len(visible_words),
+            'total_words': total_words,
+            'strategy': reveal_strategy,
+            'instruction': f'Practice the visible words. Round {session.current_round} - {len(visible_words)}/{total_words} words visible.'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
